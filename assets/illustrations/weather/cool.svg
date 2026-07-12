@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" fill="none">
+  <!-- Three horizontal wind swirls, top-heavier, bottom-longer -->
+  <g stroke="#4A6572" stroke-width="8" stroke-linecap="round" fill="none">
+    <!-- Top swirl -->
+    <path d="M90 150 L280 150 Q320 150 320 130 Q320 110 300 110 Q285 110 285 125"/>
+    <!-- Middle swirl (longer, with a curl on the right) -->
+    <path d="M70 210 L300 210 Q345 210 345 185 Q345 165 325 165 Q308 165 308 182"/>
+    <!-- Bottom swirl (shorter, curl on the left, going the other way) -->
+    <path d="M310 270 L130 270 Q90 270 90 250 Q90 232 108 232 Q122 232 122 246"/>
+  </g>
+  <!-- Small drifting leaf/particle marks to sell 'cool breeze' -->
+  <g stroke="#4A6572" stroke-width="4" stroke-linecap="round" fill="none">
+    <path d="M60 100 Q68 92 76 100"/>
+    <path d="M340 300 Q348 292 356 300"/>
+    <path d="M340 90 Q348 82 356 90"/>
+  </g>
+</svg>

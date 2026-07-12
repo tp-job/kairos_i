@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" fill="none">
+  <!-- Central snowflake: six radial arms with small V branches -->
+  <g stroke="#3E5B78" stroke-width="6" stroke-linecap="round" fill="none">
+    <!-- Vertical arm -->
+    <line x1="200" y1="120" x2="200" y2="320"/>
+    <!-- 60° arm -->
+    <line x1="113" y1="170" x2="287" y2="270"/>
+    <!-- -60° arm -->
+    <line x1="113" y1="270" x2="287" y2="170"/>
+  </g>
+  <!-- Branch tips (little Vs on each arm end) -->
+  <g stroke="#3E5B78" stroke-width="4" stroke-linecap="round" fill="none">
+    <!-- top -->
+    <path d="M188 138 L200 128 L212 138"/>
+    <path d="M188 312 L200 322 L212 312"/>
+    <!-- diagonal 1 -->
+    <path d="M118 186 L118 168 L134 168"/>
+    <path d="M282 254 L282 272 L266 272"/>
+    <!-- diagonal 2 -->
+    <path d="M118 254 L134 272 L118 272"/>
+    <path d="M282 168 L266 168 L282 186"/>
+  </g>
+  <!-- Small floating flakes around -->
+  <g stroke="#3E5B78" stroke-width="3" stroke-linecap="round" fill="none">
+    <g transform="translate(80 90)">
+      <line x1="0" y1="-14" x2="0" y2="14"/>
+      <line x1="-12" y1="-7" x2="12" y2="7"/>
+      <line x1="-12" y1="7" x2="12" y2="-7"/>
+    </g>
+    <g transform="translate(320 100)">
+      <line x1="0" y1="-10" x2="0" y2="10"/>
+      <line x1="-9" y1="-5" x2="9" y2="5"/>
+      <line x1="-9" y1="5" x2="9" y2="-5"/>
+    </g>
+    <g transform="translate(60 250)">
+      <line x1="0" y1="-8" x2="0" y2="8"/>
+      <line x1="-7" y1="-4" x2="7" y2="4"/>
+      <line x1="-7" y1="4" x2="7" y2="-4"/>
+    </g>
+    <g transform="translate(340 300)">
+      <line x1="0" y1="-12" x2="0" y2="12"/>
+      <line x1="-10" y1="-6" x2="10" y2="6"/>
+      <line x1="-10" y1="6" x2="10" y2="-6"/>
+    </g>
+  </g>
+</svg>
