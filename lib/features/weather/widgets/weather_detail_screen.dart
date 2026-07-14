@@ -111,14 +111,10 @@ class _Loaded extends StatelessWidget {
                 Expanded(
                   child: HeroIllustration(condition: selectedCondition),
                 ),
-                Text(
-                  data.cityName.toUpperCase(),
-                  style: TextStyle(
-                    color: palette.ink,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 6,
-                  ),
+                _LocationLabel(
+                  thaiName: data.cityName,
+                  englishName: data.cityNameEn,
+                  palette: palette,
                 ),
                 const SizedBox(height: 24),
                 DaySelector(
@@ -186,6 +182,58 @@ class _TemperatureRow extends StatelessWidget {
             color: palette.ink,
           ),
         ),
+      ],
+    );
+  }
+}
+
+/// The location label under the illustration. The Thai name must use the
+/// Thai font (IBM Plex Sans Thai) — a Latin-only fallback can't position
+/// Thai tone/vowel marks, and a large `letterSpacing` scatters them off
+/// their base consonants (the rendering bug this replaces). Latin text has
+/// no such constraint, so the optional English line keeps the editorial
+/// letter-spaced caps.
+class _LocationLabel extends StatelessWidget {
+  const _LocationLabel({
+    required this.thaiName,
+    required this.englishName,
+    required this.palette,
+  });
+
+  final String thaiName;
+  final String? englishName;
+  final WeatherPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          thaiName,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.ibmPlexSansThai(
+            color: palette.ink,
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+            // A hair of tracking is safe for Thai; the previous value (6)
+            // pushed the combining marks off their bases.
+            letterSpacing: 0.5,
+          ),
+        ),
+        if (englishName != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            englishName!.toUpperCase(),
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: palette.mutedInk,
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 5,
+            ),
+          ),
+        ],
       ],
     );
   }

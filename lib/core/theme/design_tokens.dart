@@ -34,19 +34,55 @@ class DesignTokens {
   static const onError = Color(0xFFFFFFFF);
   static const errorContainer = Color(0xFFFFDAD6);
 
-  static const background = Color(0xFFF9F9F9);
-  static const onBackground = Color(0xFF1A1C1C);
+  // --- "Studio" light theme (project-management reference) ---------------
+  // Charcoal accents on a soft off-white base. `ink` remains the neutral
+  // dark used for text and any surface meant to read as ink rather than
+  // brand. Brand-colored surfaces use the Aurora tokens below.
+  static const ink = Color(0xFF2A2A2A);
+  static const onInk = Color(0xFFFFFFFF);
 
-  // --- Glass surface: white text/borders at low opacity, per the
-  // "Elevation & Depth" section (10%-40% opacity tiers, 20% borders). ---
-  static const glassTextPrimary = Colors.white;
-  static final Color glassTextSecondary = Colors.white.withValues(alpha: 0.70);
-  static final Color glassBorder = Colors.white.withValues(alpha: 0.20);
-  static final Color glassBorderFocused = Colors.white.withValues(alpha: 0.60);
-  static final Color glassFillLow = Colors.white.withValues(alpha: 0.10);
-  static final Color glassFillMid = Colors.white.withValues(alpha: 0.18);
-  static final Color glassFillHigh = Colors.white.withValues(alpha: 0.30);
-  static final Color glassShadowTint = secondary.withValues(alpha: 0.10);
+  // --- "Aurora" brand theme: violet → coral -------------------------------
+  // The app's identity colors. `brand` is the primary (solid fills, active
+  // states, FAB, buttons); `accent` is the warm pop and the far stop of the
+  // signature gradient used on hero surfaces (header, primary/featured
+  // cards). Both are surfaced through AppTheme's ColorScheme too.
+  static const brandViolet = Color(0xFF6C5CE7);
+  static const brandCoral = Color(0xFFFF5F5E);
+  static const brand = brandViolet;
+  static const onBrand = Color(0xFFFFFFFF);
+  static const accent = brandCoral;
+
+  /// Signature two-stop gradient (violet → coral) for hero surfaces.
+  static const brandGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [brandViolet, brandCoral],
+  );
+
+  /// App canvas (the phone screen) and the slightly cooler page behind it.
+  static const background = Color(0xFFFAFAFA);
+  static const pageBackdrop = Color(0xFFE8ECF1); // FAB ring / device frame
+  static const cardWhite = Color(0xFFFFFFFF);
+  static const secondaryCard = Color(0xFFEEF2FF); // pale indigo tile
+
+  /// Text ramp: strong (headings), muted (body), faint (meta/inactive).
+  static const textStrong = Color(0xFF1F2933);
+  static const textMuted = Color(0xFF6B7280);
+  static const textFaint = Color(0xFF9CA3AF);
+
+  static const hairline = Color(0xFFE5E7EB);
+  static final Color cardShadow = Colors.black.withValues(alpha: 0.06);
+
+  // --- Back-compat aliases: older glass widgets still read these names.
+  // Repointed to the light palette so nothing renders invisibly. ---
+  static const glassTextPrimary = textStrong;
+  static const glassTextSecondary = textMuted;
+  static const glassBorder = hairline;
+  static const glassBorderFocused = ink;
+  static const glassFillLow = cardWhite;
+  static const glassFillMid = secondaryCard;
+  static const glassFillHigh = Color(0xFFF1F5F9);
+  static final Color glassShadowTint = cardShadow;
 
   // --- Typography: font family + the named type scale. ---
   static const fontFamilyName = 'IBM Plex Sans Thai';

@@ -20,6 +20,7 @@ class WeatherCard extends ConsumerWidget {
     return BentoCard(
       title: 'สภาพอากาศ',
       icon: Icons.wb_sunny_outlined,
+      elevated: true,
       // Tapping the Bento box opens the full editorial detail view.
       // (Refresh is handled inside the detail screen or via a future
       // pull-to-refresh gesture on the dashboard itself.)

@@ -16,8 +16,27 @@ class AppTheme {
   static const Color textPrimary = DesignTokens.glassTextPrimary;
   static Color surface = DesignTokens.glassFillLow;
 
+  /// Brand identity (Aurora): violet primary + coral accent, and the
+  /// signature gradient for hero surfaces.
+  static const Color brand = DesignTokens.brand;
+  static const Color accent = DesignTokens.accent;
+  static const Gradient brandGradient = DesignTokens.brandGradient;
+
   static const double cardRadius = DesignTokens.radiusXl;
   static const double gridGap = DesignTokens.spacingUnit * 1.5; // 12px
+
+  /// The standard white "soft card" surface used across the dashboard
+  /// (task rows, placeholders, skeletons): white fill, rounded corners,
+  /// one quiet shadow. Kept here so the look is defined in one place.
+  static BoxDecoration softCard({double radius = 18}) {
+    return BoxDecoration(
+      color: DesignTokens.cardWhite,
+      borderRadius: BorderRadius.circular(radius),
+      boxShadow: [
+        BoxShadow(color: DesignTokens.cardShadow, blurRadius: 16),
+      ],
+    );
+  }
 
   static TextStyle _textStyle({
     required double fontSize,
@@ -74,22 +93,22 @@ class AppTheme {
 
     return ThemeData(
       useMaterial3: true,
-      // Transparent so MeshBackground (wrapped around the app in
+      // Transparent so the app background (wrapped around the app in
       // main.dart) shows through every screen's Scaffold.
       scaffoldBackgroundColor: Colors.transparent,
-      colorScheme: const ColorScheme.dark(
-        primary: DesignTokens.primary,
-        onPrimary: DesignTokens.onPrimary,
-        secondary: DesignTokens.secondary,
-        onSecondary: DesignTokens.onSecondary,
-        tertiary: DesignTokens.tertiary,
+      colorScheme: const ColorScheme.light(
+        primary: DesignTokens.brand,
+        onPrimary: DesignTokens.onBrand,
+        secondary: DesignTokens.accent,
+        onSecondary: DesignTokens.onBrand,
+        tertiary: DesignTokens.brand,
         error: DesignTokens.error,
         onError: DesignTokens.onError,
-        surface: Colors.transparent,
-        onSurface: DesignTokens.glassTextPrimary,
+        surface: DesignTokens.background,
+        onSurface: DesignTokens.textStrong,
       ),
       textTheme: textTheme,
-      iconTheme: IconThemeData(color: DesignTokens.glassTextSecondary),
+      iconTheme: const IconThemeData(color: DesignTokens.textMuted),
       inputDecorationTheme: InputDecorationTheme(
         hintStyle: TextStyle(color: DesignTokens.glassTextSecondary),
         border: InputBorder.none,

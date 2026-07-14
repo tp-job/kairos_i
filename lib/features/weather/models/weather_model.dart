@@ -5,6 +5,7 @@
 class WeatherModel {
   const WeatherModel({
     required this.cityName,
+    this.cityNameEn,
     required this.temperatureC,
     required this.feelsLikeC,
     required this.condition,
@@ -13,7 +14,13 @@ class WeatherModel {
     required this.humidityPercent,
   });
 
+  /// Localized city name (Thai, from `lang=th`) — e.g. "จังหวัดนนทบุรี".
   final String cityName;
+
+  /// English city name (from a parallel `lang=en` request), when available —
+  /// e.g. "Nonthaburi". Null if the English lookup wasn't made or matched
+  /// the Thai name.
+  final String? cityNameEn;
   final double temperatureC;
   final double feelsLikeC;
   final String condition; // e.g. "Rain", "Clear"
@@ -21,13 +28,20 @@ class WeatherModel {
   final int rainChancePercent; // derived from pop (0.0-1.0) when available
   final int humidityPercent;
 
-  factory WeatherModel.fromJson(Map<String, dynamic> json) {
+  factory WeatherModel.fromJson(
+    Map<String, dynamic> json, {
+    String? cityNameEn,
+  }) {
     final main = json['main'] as Map<String, dynamic>;
     final weatherList = json['weather'] as List<dynamic>;
     final weather = weatherList.first as Map<String, dynamic>;
 
+    final name = json['name'] as String? ?? 'Unknown';
     return WeatherModel(
-      cityName: json['name'] as String? ?? 'Unknown',
+      cityName: name,
+      // Only keep the English name when it actually differs from the Thai
+      // one, so the UI doesn't render the same word twice.
+      cityNameEn: (cityNameEn != null && cityNameEn != name) ? cityNameEn : null,
       temperatureC: (main['temp'] as num).toDouble(),
       feelsLikeC: (main['feels_like'] as num).toDouble(),
       condition: weather['main'] as String? ?? '',

@@ -16,6 +16,7 @@ class BentoCard extends StatelessWidget {
     required this.icon,
     required this.child,
     this.onTap,
+    this.elevated = false,
   });
 
   final String title;
@@ -23,10 +24,28 @@ class BentoCard extends StatelessWidget {
   final Widget child;
   final VoidCallback? onTap;
 
+  /// When true the card reads as a slightly raised "hero" surface via a
+  /// subtle monochrome gradient (no color) — used for the top card.
+  final bool elevated;
+
+  /// A luminance-only gradient for the hero surface: a touch lighter at the
+  /// top-left, settling back to the standard card tone. Keeps hierarchy
+  /// without introducing any hue.
+  static final LinearGradient _heroGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Colors.white.withValues(alpha: 0.11),
+      Colors.white.withValues(alpha: 0.05),
+    ],
+  );
+
   @override
   Widget build(BuildContext context) {
     return GlassContainer(
-      padding: const EdgeInsets.all(DesignTokens.spacingUnit * 2.5), // 20px
+      padding: const EdgeInsets.all(DesignTokens.spacingUnit * 3), // 24px
+      gradient: elevated ? _heroGradient : null,
+      borderColor: elevated ? DesignTokens.glassBorderFocused : null,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
@@ -37,12 +56,23 @@ class BentoCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Icon(icon, size: 18, color: AppTheme.textMuted),
+                  Icon(icon, size: 16, color: AppTheme.textMuted),
                   const SizedBox(width: 8),
-                  Text(title, style: Theme.of(context).textTheme.titleMedium),
+                  Flexible(
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                            color: AppTheme.textMuted,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: 0.2,
+                          ),
+                    ),
+                  ),
                 ],
               ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 16),
               Expanded(child: child),
             ],
           ),
