@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../theme/app_theme.dart';
 import '../theme/design_tokens.dart';
 import 'glass_container.dart';
 
-/// A Bento box, styled as a "Glass Card" per the design system's
-/// Components section: signature glass vessel with a title row, built
-/// on top of GlassContainer. Individual feature cards (WeatherCard,
-/// TasksCard, ...) only ever provide `child` — the glass shell, title
-/// row, and tap target live here so every box looks identical.
+/// A Bento box: the standard titled card every feature panel is built on
+/// (WeatherCard, TasksCard, ...). Feature widgets supply only `child` — the
+/// shell, title row and tap target live here so every box is identical.
 class BentoCard extends StatelessWidget {
   const BentoCard({
     super.key,
@@ -24,57 +23,53 @@ class BentoCard extends StatelessWidget {
   final Widget child;
   final VoidCallback? onTap;
 
-  /// When true the card reads as a slightly raised "hero" surface via a
-  /// subtle monochrome gradient (no color) — used for the top card.
+  /// When true the card reads as the raised "hero" surface — a tinted
+  /// container, not a second shadow tier.
   final bool elevated;
-
-  /// A luminance-only gradient for the hero surface: a touch lighter at the
-  /// top-left, settling back to the standard card tone. Keeps hierarchy
-  /// without introducing any hue.
-  static final LinearGradient _heroGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [
-      Colors.white.withValues(alpha: 0.11),
-      Colors.white.withValues(alpha: 0.05),
-    ],
-  );
 
   @override
   Widget build(BuildContext context) {
+    final scheme = context.colors;
+    final fill = elevated
+        ? scheme.surfaceContainerHigh
+        : scheme.surfaceContainerLowest;
+    final border = elevated ? scheme.primary.withValues(alpha: 0.35) : null;
+
     return GlassContainer(
-      padding: const EdgeInsets.all(DesignTokens.spacingUnit * 3), // 24px
-      gradient: elevated ? _heroGradient : null,
-      borderColor: elevated ? DesignTokens.glassBorderFocused : null,
+      padding: EdgeInsets.zero,
+      fillColor: fill,
+      borderColor: border,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(DesignTokens.radiusXl),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(icon, size: 16, color: AppTheme.textMuted),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            color: AppTheme.textMuted,
-                            fontWeight: FontWeight.w500,
-                            letterSpacing: 0.2,
-                          ),
+          borderRadius: BorderRadius.circular(DesignTokens.radius2xl),
+          child: Padding(
+            padding: const EdgeInsets.all(DesignTokens.cardPadding),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(icon, size: 16, color: scheme.onSurfaceVariant),
+                    const SizedBox(width: DesignTokens.space2),
+                    Flexible(
+                      child: Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.text.labelLarge?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Expanded(child: child),
-            ],
+                  ],
+                ),
+                const SizedBox(height: DesignTokens.space4),
+                Expanded(child: child),
+              ],
+            ),
           ),
         ),
       ),
@@ -82,9 +77,8 @@ class BentoCard extends StatelessWidget {
   }
 }
 
-/// The three states every AsyncValue can be in, rendered consistently
-/// so no card has to hand-roll its own loading spinner / error text.
-/// Pass this the AsyncValue from `ref.watch(someFutureProvider)`.
+/// The three states every AsyncValue can be in, rendered consistently so no
+/// card hand-rolls its own spinner or error text.
 class AsyncCardBody<T> extends StatelessWidget {
   const AsyncCardBody({
     super.key,
@@ -99,24 +93,27 @@ class AsyncCardBody<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     return value.when(
       data: (data) => builder(context, data),
-      loading: () => Center(
+      loading: () => const Center(
         child: SizedBox(
           width: 20,
           height: 20,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            color: AppTheme.textMuted,
-          ),
+          child: CircularProgressIndicator(strokeWidth: 2),
         ),
       ),
       error: (error, _) => Center(
-        child: Text(
-          'โหลดข้อมูลไม่สำเร็จ\n$error',
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: DesignTokens.errorContainer,
-            fontSize: 12,
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.cloud_off_rounded,
+                size: 20, color: context.colors.onSurfaceVariant),
+            const SizedBox(height: DesignTokens.space2),
+            Text(
+              'โหลดข้อมูลไม่สำเร็จ',
+              textAlign: TextAlign.center,
+              style: context.text.bodySmall
+                  ?.copyWith(color: context.colors.onSurfaceVariant),
+            ),
+          ],
         ),
       ),
     );

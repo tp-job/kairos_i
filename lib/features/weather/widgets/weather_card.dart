@@ -48,7 +48,9 @@ class _WeatherContent extends StatelessWidget {
       children: [
         Text(
           '${data.temperatureC.round()}°',
-          style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w300),
+          style: context.text.displayMedium?.copyWith(
+            fontWeight: FontWeight.w300,
+          ),
         ),
         Text(data.description, style: Theme.of(context).textTheme.bodySmall),
         const SizedBox(height: 6),
@@ -57,12 +59,13 @@ class _WeatherContent extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              const Icon(Icons.warning_amber_rounded,
-                  size: 14, color: AppTheme.danger),
+              Icon(Icons.warning_amber_rounded,
+                  size: 14, color: context.colors.error),
               const SizedBox(width: 4),
               Text(
                 'มีโอกาสฝนตก เตรียมร่มไว้',
-                style: const TextStyle(color: AppTheme.danger, fontSize: 12),
+                style: context.text.bodySmall
+                    ?.copyWith(color: context.colors.error),
               ),
             ],
           ),

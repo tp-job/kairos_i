@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+
+import '../../core/motion/motion.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/design_tokens.dart';
+import '../../core/theme/theme_provider.dart';
 import '../market/providers/market_provider.dart';
 import '../news/models/news_model.dart';
 import '../news/providers/news_provider.dart';
+import '../notes/notes_screen.dart';
+import '../notes/providers/notes_provider.dart';
 import '../orchestrator/providers/orchestrator_provider.dart';
 import '../tasks/models/task_model.dart';
 import '../tasks/providers/tasks_provider.dart';
@@ -13,30 +18,34 @@ import '../weather/providers/weather_provider.dart';
 import '../weather/weather_glass_screen.dart';
 import 'widgets/dashboard_header.dart';
 
-/// The dashboard, rebuilt to the "Studio" project-management reference:
-/// a charcoal hero header with an overlapping search bar, a horizontal
-/// row of project cards, a tasks list, and a floating bottom nav with a
-/// center add button. Kairos's real providers feed the cards.
+/// The dashboard: a brand hero header with an overlapping search bar, a row of
+/// summary cards, and the task list. Kairos's real providers feed the cards.
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      backgroundColor: DesignTokens.background,
-      // Scrolling content. No top SafeArea: the charcoal header bleeds
-      // under the status bar (it carries its own top padding). The bottom
-      // padding clears the shell's floating nav bar.
+      backgroundColor: Colors.transparent,
+      // No top SafeArea: the hero header bleeds under the status bar and
+      // carries its own top padding. The bottom padding clears the shell's
+      // floating nav bar.
       body: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 120),
+        padding: const EdgeInsets.only(bottom: DesignTokens.navBarClearance),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const _TopSection(),
-            const SizedBox(height: 24),
-            const _ProjectsSection(),
-            const SizedBox(height: 28),
-            const _TasksSection(),
+            const SizedBox(height: DesignTokens.space6),
+            const FadeSlideIn(
+              delay: Duration(milliseconds: 80),
+              child: _ProjectsSection(),
+            ),
+            const SizedBox(height: DesignTokens.space8),
+            const FadeSlideIn(
+              delay: Duration(milliseconds: 180),
+              child: _TasksSection(),
+            ),
           ],
         ),
       ),
@@ -44,32 +53,32 @@ class DashboardScreen extends ConsumerWidget {
   }
 }
 
-/// Charcoal header + the search bar that straddles its bottom edge.
+/// Hero header + the search bar straddling its bottom edge.
 ///
-/// The header reserves [_overlap] px of blank space beneath it (via the
-/// Padding) and the search bar is pinned to the bottom of that space, so
-/// the bar sits half over the charcoal and half over the page — while
-/// staying fully inside the Stack's bounds (an out-of-bounds `Positioned`
-/// child would drop taps on the overhanging strip).
-class _TopSection extends StatelessWidget {
+/// The header reserves [_overlap] px of blank space beneath it and the search
+/// bar is pinned to the bottom of that space, so the bar sits half over the
+/// header and half over the page while staying inside the Stack's bounds (an
+/// out-of-bounds `Positioned` child drops taps on the overhang).
+class _TopSection extends ConsumerWidget {
   const _TopSection();
 
   static const double _overlap = 28;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Stack(
-      children: const [
+      children: [
         Padding(
-          padding: EdgeInsets.only(bottom: _overlap),
+          padding: const EdgeInsets.only(bottom: _overlap),
           child: DashboardHeader(
             greeting: 'สวัสดี, Marimar 👋',
             headline: 'มาเริ่มจัดการ\nงานของคุณกัน',
+            onAvatar: () => openThemeSettings(context, ref),
           ),
         ),
-        Positioned(
-          left: 24,
-          right: 24,
+        const Positioned(
+          left: DesignTokens.screenPadding,
+          right: DesignTokens.screenPadding,
           bottom: 0,
           child: _SearchBar(),
         ),
@@ -104,49 +113,46 @@ class _SearchBarState extends ConsumerState<_SearchBar> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = context.colors;
     return Container(
-      decoration: BoxDecoration(
-        color: DesignTokens.cardWhite,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+      decoration: AppTheme.softCard(context, radius: DesignTokens.radiusXl),
+      padding: const EdgeInsets.fromLTRB(16, 6, 6, 6),
       child: Row(
         children: [
-          const Icon(Icons.search, color: DesignTokens.textFaint, size: 20),
-          const SizedBox(width: 12),
+          Icon(Icons.search, color: scheme.onSurfaceVariant, size: 20),
+          const SizedBox(width: DesignTokens.space3),
           Expanded(
             child: TextField(
               controller: _controller,
               onSubmitted: (_) => _submit(),
               textInputAction: TextInputAction.search,
-              style: const TextStyle(
-                fontSize: 14,
-                color: DesignTokens.textStrong,
-              ),
+              style: context.text.bodyMedium,
               decoration: const InputDecoration(
                 isDense: true,
+                filled: false,
                 border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
                 hintText: 'ค้นหา หรือพิมพ์คำสั่ง',
-                hintStyle: TextStyle(color: DesignTokens.textFaint),
               ),
             ),
           ),
-          Material(
-            color: DesignTokens.brand,
-            borderRadius: BorderRadius.circular(12),
-            child: InkWell(
-              onTap: _submit,
-              borderRadius: BorderRadius.circular(12),
-              child: const Padding(
-                padding: EdgeInsets.all(10),
-                child: Icon(Icons.tune, color: Colors.white, size: 18),
+          Semantics(
+            button: true,
+            label: 'ส่งคำสั่ง',
+            child: Material(
+              color: scheme.primary,
+              borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
+              child: InkWell(
+                onTap: _submit,
+                borderRadius: BorderRadius.circular(DesignTokens.radiusMd),
+                child: SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: Icon(Icons.arrow_upward_rounded,
+                      color: scheme.onPrimary, size: 18),
+                ),
               ),
             ),
           ),
@@ -156,7 +162,7 @@ class _SearchBarState extends ConsumerState<_SearchBar> {
   }
 }
 
-// --- Projects (horizontal cards) -----------------------------------------
+// --- Summary cards --------------------------------------------------------
 
 class _ProjectsSection extends StatelessWidget {
   const _ProjectsSection();
@@ -167,22 +173,26 @@ class _ProjectsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 24),
+          padding:
+              EdgeInsets.symmetric(horizontal: DesignTokens.screenPadding),
           child: _SectionHeader(title: 'ภาพรวม', action: 'ทั้งหมด'),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: DesignTokens.space4),
         SizedBox(
           height: 210,
           child: ListView(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.symmetric(
+                horizontal: DesignTokens.screenPadding),
             children: const [
               _WeatherProjectCard(),
-              SizedBox(width: 16),
+              SizedBox(width: DesignTokens.space4),
               _MarketMiniCard(),
-              SizedBox(width: 16),
+              SizedBox(width: DesignTokens.space4),
               _NewsMiniCard(),
-              SizedBox(width: 8),
+              SizedBox(width: DesignTokens.space4),
+              _NotesMiniCard(),
+              SizedBox(width: DesignTokens.space2),
             ],
           ),
         ),
@@ -191,24 +201,34 @@ class _ProjectsSection extends StatelessWidget {
   }
 }
 
-/// Primary (dark) project card — bound to live weather.
+/// The one saturated card on the page — bound to live weather.
 class _WeatherProjectCard extends ConsumerWidget {
   const _WeatherProjectCard();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final weather = ref.watch(weatherProvider);
+    final palette = context.palette;
+    final scheme = context.colors;
 
-    return GestureDetector(
+    return PressableScale(
       onTap: () => Navigator.of(context).push(
         MaterialPageRoute(builder: (_) => const WeatherGlassScreen()),
       ),
       child: Container(
         width: 210,
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(DesignTokens.cardPadding),
         decoration: BoxDecoration(
-          gradient: DesignTokens.brandGradient,
-          borderRadius: BorderRadius.circular(28),
+          gradient: palette.heroGradient,
+          borderRadius: BorderRadius.circular(DesignTokens.radius2xl),
+          boxShadow: [
+            BoxShadow(
+              color: scheme.primary.withValues(alpha: 0.28),
+              blurRadius: 24,
+              offset: const Offset(0, 12),
+              spreadRadius: -8,
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -217,41 +237,32 @@ class _WeatherProjectCard extends ConsumerWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.18),
+                color: palette.onHero.withValues(alpha: 0.18),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.wb_sunny_rounded,
-                  color: Colors.white, size: 20),
+              child: Icon(Icons.wb_sunny_rounded,
+                  color: palette.onHero, size: 20),
             ),
-            const SizedBox(height: 20),
-            const Text(
+            const SizedBox(height: DesignTokens.space5),
+            Text(
               'สภาพอากาศ',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-              ),
+              style: context.text.titleMedium?.copyWith(color: palette.onHero),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: DesignTokens.space1),
             Expanded(
               child: weather.when(
                 data: (data) => Text(
                   '${data.cityName} · ${data.description}',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6),
-                    fontSize: 13,
-                    height: 1.4,
-                  ),
+                  style: context.text.bodySmall
+                      ?.copyWith(color: palette.onHeroVariant),
                 ),
                 loading: () => const SizedBox.shrink(),
                 error: (_, _) => Text(
                   'ตั้งค่า API key เพื่อดูข้อมูล',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.6),
-                    fontSize: 13,
-                  ),
+                  style: context.text.bodySmall
+                      ?.copyWith(color: palette.onHeroVariant),
                 ),
               ),
             ),
@@ -262,9 +273,8 @@ class _WeatherProjectCard extends ConsumerWidget {
                   child: weather.maybeWhen(
                     data: (data) => Text(
                       '${data.temperatureC.round()}°',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 34,
+                      style: context.text.displayMedium?.copyWith(
+                        color: palette.onHero,
                         fontWeight: FontWeight.w300,
                       ),
                     ),
@@ -274,12 +284,12 @@ class _WeatherProjectCard extends ConsumerWidget {
                 Container(
                   width: 34,
                   height: 34,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
+                  decoration: BoxDecoration(
+                    color: palette.onHero,
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.chevron_right,
-                      color: DesignTokens.brand, size: 20),
+                  child: Icon(Icons.chevron_right,
+                      color: scheme.primary, size: 20),
                 ),
               ],
             ),
@@ -290,7 +300,6 @@ class _WeatherProjectCard extends ConsumerWidget {
   }
 }
 
-/// Secondary (light) card — market snapshot.
 class _MarketMiniCard extends ConsumerWidget {
   const _MarketMiniCard();
 
@@ -312,7 +321,6 @@ class _MarketMiniCard extends ConsumerWidget {
   }
 }
 
-/// Secondary (light) card — latest news.
 class _NewsMiniCard extends ConsumerWidget {
   const _NewsMiniCard();
 
@@ -332,66 +340,73 @@ class _NewsMiniCard extends ConsumerWidget {
   }
 }
 
+class _NotesMiniCard extends ConsumerWidget {
+  const _NotesMiniCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final notes = ref.watch(notesProvider);
+    final subtitle = notes.isEmpty ? 'เริ่มเขียนโน้ตแรก' : notes.first.title;
+    return _MiniCard(
+      icon: Icons.edit_note_rounded,
+      title: 'โน้ต',
+      subtitle: subtitle,
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const NotesScreen()),
+      ),
+    );
+  }
+}
+
 class _MiniCard extends StatelessWidget {
   const _MiniCard({
     required this.icon,
     required this.title,
     required this.subtitle,
+    this.onTap,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final scheme = context.colors;
+    final card = Container(
       width: 160,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: DesignTokens.secondaryCard,
-        borderRadius: BorderRadius.circular(28),
-      ),
+      padding: const EdgeInsets.all(DesignTokens.cardPadding),
+      decoration: AppTheme.sunkenCard(context,
+          radius: DesignTokens.radius2xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             width: 40,
             height: 40,
-            decoration: const BoxDecoration(
-              color: DesignTokens.cardWhite,
+            decoration: BoxDecoration(
+              color: scheme.surfaceContainerLowest,
               shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(color: Color(0x14000000), blurRadius: 8),
-              ],
             ),
-            child: Icon(icon, color: DesignTokens.brand, size: 18),
+            child: Icon(icon, color: scheme.primary, size: 18),
           ),
-          const SizedBox(height: 20),
-          Text(
-            title,
-            style: const TextStyle(
-              color: DesignTokens.textStrong,
-              fontSize: 15,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 6),
+          const SizedBox(height: DesignTokens.space5),
+          Text(title, style: context.text.titleSmall),
+          const SizedBox(height: DesignTokens.space1),
           Expanded(
             child: Text(
               subtitle,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: DesignTokens.textMuted,
-                fontSize: 12,
-                height: 1.4,
-              ),
+              style: context.text.bodySmall
+                  ?.copyWith(color: scheme.onSurfaceVariant),
             ),
           ),
         ],
       ),
     );
+    return onTap == null ? card : PressableScale(onTap: onTap, child: card);
   }
 }
 
@@ -402,38 +417,30 @@ class _TasksSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tasks = ref.watch(tasksProvider);
+    // Reads the local store, not ClickUp: this section must show the task you
+    // just added via "+" whether or not the API is configured.
+    final items = ref.watch(upcomingLocalTasksProvider);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding:
+          const EdgeInsets.symmetric(horizontal: DesignTokens.screenPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const _SectionHeader(title: 'งานของฉัน', action: 'ดูทั้งหมด'),
-          const SizedBox(height: 16),
-          tasks.when(
-            data: (items) => items.isEmpty
-                ? const _TaskPlaceholder(text: 'ไม่มีงานค้าง 🎉')
-                : Column(
-                    children: [
-                      for (final task in items.take(5))
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: _TaskItem(task: task),
-                        ),
-                    ],
-                  ),
-            loading: () => const Column(
+          const SizedBox(height: DesignTokens.space4),
+          if (items.isEmpty)
+            const _TaskPlaceholder(text: 'ไม่มีงานค้าง 🎉 แตะ + เพื่อเพิ่มงาน')
+          else
+            Column(
               children: [
-                _TaskSkeleton(),
-                SizedBox(height: 12),
-                _TaskSkeleton(),
+                for (final task in items.take(5))
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: DesignTokens.space3),
+                    child: _TaskItem(task: task),
+                  ),
               ],
             ),
-            error: (_, _) => const _TaskPlaceholder(
-              text: 'เชื่อมต่อ ClickUp เพื่อแสดงงานของคุณ',
-            ),
-          ),
         ],
       ),
     );
@@ -452,20 +459,20 @@ class _TaskItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = context.colors;
     final due = task.dueDate;
-    final subtitle = due != null
-        ? DateFormat('d MMM · HH:mm').format(due)
-        : task.status;
+    final subtitle =
+        due != null ? DateFormat('d MMM · HH:mm').format(due) : task.status;
 
     return Opacity(
       opacity: _done ? 0.6 : 1,
       child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: AppTheme.softCard(),
+        padding: const EdgeInsets.all(DesignTokens.space4),
+        decoration: AppTheme.softCard(context),
         child: Row(
           children: [
             _Checkbox(done: _done),
-            const SizedBox(width: 14),
+            const SizedBox(width: DesignTokens.space3),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -474,32 +481,17 @@ class _TaskItem extends StatelessWidget {
                     task.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: DesignTokens.textStrong,
-                    ),
+                    style: context.text.titleSmall,
                   ),
                   const SizedBox(height: 2),
                   Text(
                     subtitle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: DesignTokens.textMuted,
-                    ),
+                    style: context.text.bodySmall
+                        ?.copyWith(color: scheme.onSurfaceVariant),
                   ),
                 ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              width: 8,
-              height: 8,
-              decoration: const BoxDecoration(
-                color: DesignTokens.hairline,
-                shape: BoxShape.circle,
               ),
             ),
           ],
@@ -511,22 +503,22 @@ class _TaskItem extends StatelessWidget {
 
 class _Checkbox extends StatelessWidget {
   const _Checkbox({required this.done});
+
   final bool done;
 
   @override
   Widget build(BuildContext context) {
+    final scheme = context.colors;
     return Container(
       width: 24,
       height: 24,
       decoration: BoxDecoration(
-        color: done ? DesignTokens.brand : Colors.transparent,
+        color: done ? scheme.primary : Colors.transparent,
         borderRadius: BorderRadius.circular(7),
-        border: done
-            ? null
-            : Border.all(color: DesignTokens.hairline, width: 2),
+        border: done ? null : Border.all(color: scheme.outline, width: 2),
       ),
       child: done
-          ? const Icon(Icons.check, color: Colors.white, size: 14)
+          ? Icon(Icons.check, color: scheme.onPrimary, size: 14)
           : null,
     );
   }
@@ -534,38 +526,27 @@ class _Checkbox extends StatelessWidget {
 
 class _TaskPlaceholder extends StatelessWidget {
   const _TaskPlaceholder({required this.text});
+
   final String text;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: AppTheme.softCard(),
+      padding: const EdgeInsets.all(DesignTokens.cardPadding),
+      decoration: AppTheme.softCard(context),
       child: Text(
         text,
-        style: const TextStyle(color: DesignTokens.textMuted, fontSize: 13),
+        style: context.text.bodyMedium
+            ?.copyWith(color: context.colors.onSurfaceVariant),
       ),
     );
   }
 }
 
-class _TaskSkeleton extends StatelessWidget {
-  const _TaskSkeleton();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 64,
-      decoration: AppTheme.softCard(),
-    );
-  }
-}
-
-// --- Shared bits ----------------------------------------------------------
-
 class _SectionHeader extends StatelessWidget {
   const _SectionHeader({required this.title, required this.action});
+
   final String title;
   final String action;
 
@@ -575,116 +556,65 @@ class _SectionHeader extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: DesignTokens.textStrong,
-          ),
-        ),
+        Text(title, style: context.text.titleLarge),
         Text(
           action,
-          style: const TextStyle(fontSize: 13, color: DesignTokens.textMuted),
+          style: context.text.labelLarge
+              ?.copyWith(color: context.colors.primary),
         ),
       ],
     );
   }
 }
 
-/// Quick-capture sheet opened by the center "+" — routes free text through
-/// the AI orchestrator (create a task, ask a question, etc.). Public so the
-/// [MainShell]'s FAB can trigger it from any tab.
+// --- Sheets ---------------------------------------------------------------
+
+/// Quick-capture sheet — routes free text through the AI orchestrator.
+/// Public so the shell's FAB can trigger it from any tab.
 void openQuickAdd(BuildContext context, WidgetRef ref) {
   final controller = TextEditingController();
   showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.transparent,
     builder: (sheetContext) {
+      void submit() {
+        final text = controller.text.trim();
+        if (text.isNotEmpty) {
+          ref.read(orchestratorControllerProvider.notifier).submit(text);
+        }
+        Navigator.of(sheetContext).pop();
+      }
+
       return Padding(
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
         ),
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-          decoration: const BoxDecoration(
-            color: DesignTokens.cardWhite,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-          ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 4, 24, 32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: DesignTokens.hairline,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'เพิ่มอย่างรวดเร็ว',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: DesignTokens.textStrong,
-                ),
-              ),
-              const SizedBox(height: 16),
+              Text('เพิ่มอย่างรวดเร็ว',
+                  style: sheetContext.text.titleLarge),
+              const SizedBox(height: DesignTokens.space4),
               Row(
                 children: [
                   Expanded(
                     child: TextField(
                       controller: controller,
                       autofocus: true,
-                      style: const TextStyle(color: DesignTokens.textStrong),
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         hintText: 'เช่น "พรุ่งนี้บ่ายโมงส่งงาน"',
-                        hintStyle:
-                            const TextStyle(color: DesignTokens.textFaint),
-                        filled: true,
-                        fillColor: DesignTokens.background,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide.none,
-                        ),
                       ),
-                      onSubmitted: (text) {
-                        if (text.trim().isNotEmpty) {
-                          ref
-                              .read(orchestratorControllerProvider.notifier)
-                              .submit(text.trim());
-                        }
-                        Navigator.of(sheetContext).pop();
-                      },
+                      onSubmitted: (_) => submit(),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Material(
-                    color: DesignTokens.brand,
-                    borderRadius: BorderRadius.circular(14),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(14),
-                      onTap: () {
-                        final text = controller.text.trim();
-                        if (text.isNotEmpty) {
-                          ref
-                              .read(orchestratorControllerProvider.notifier)
-                              .submit(text);
-                        }
-                        Navigator.of(sheetContext).pop();
-                      },
-                      child: const Padding(
-                        padding: EdgeInsets.all(14),
-                        child: Icon(Icons.arrow_upward_rounded,
-                            color: Colors.white, size: 20),
-                      ),
-                    ),
+                  const SizedBox(width: DesignTokens.space3),
+                  IconButton.filled(
+                    onPressed: submit,
+                    iconSize: 20,
+                    icon: const Icon(Icons.arrow_upward_rounded),
                   ),
                 ],
               ),
@@ -694,4 +624,69 @@ void openQuickAdd(BuildContext context, WidgetRef ref) {
       );
     },
   ).whenComplete(controller.dispose);
+}
+
+/// Theme settings: light/dark/system plus the three exported contrast levels.
+///
+/// The previous sheet derived the whole palette from an Unsplash URL, which
+/// made the app's colors depend on a network fetch and silently ignored the
+/// OS light/dark setting. These two knobs map straight onto the six schemes in
+/// `material_scheme.dart`.
+void openThemeSettings(BuildContext context, WidgetRef ref) {
+  showModalBottomSheet<void>(
+    context: context,
+    builder: (sheetContext) => Consumer(
+      builder: (context, ref, _) {
+        final state = ref.watch(themeProvider);
+        final notifier = ref.read(themeProvider.notifier);
+
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 4, 24, 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('ธีมและการแสดงผล', style: context.text.titleLarge),
+                const SizedBox(height: DesignTokens.space5),
+                Text('โหมดสี',
+                    style: context.text.labelLarge
+                        ?.copyWith(color: context.colors.onSurfaceVariant)),
+                const SizedBox(height: DesignTokens.space2),
+                SegmentedButton<ThemeMode>(
+                  segments: [
+                    for (final mode in ThemeMode.values)
+                      ButtonSegment(value: mode, label: Text(mode.thaiLabel)),
+                  ],
+                  selected: {state.mode},
+                  showSelectedIcon: false,
+                  onSelectionChanged: (s) => notifier.setMode(s.first),
+                ),
+                const SizedBox(height: DesignTokens.space5),
+                Text('ความคมชัด',
+                    style: context.text.labelLarge
+                        ?.copyWith(color: context.colors.onSurfaceVariant)),
+                const SizedBox(height: DesignTokens.space2),
+                SegmentedButton<AppContrast>(
+                  segments: [
+                    for (final c in AppContrast.values)
+                      ButtonSegment(value: c, label: Text(c.thaiLabel)),
+                  ],
+                  selected: {state.contrast},
+                  showSelectedIcon: false,
+                  onSelectionChanged: (s) => notifier.setContrast(s.first),
+                ),
+                const SizedBox(height: DesignTokens.space4),
+                Text(
+                  'โหมด "ตามระบบ" จะสลับสว่าง/มืดตามการตั้งค่าของเครื่อง',
+                  style: context.text.bodySmall
+                      ?.copyWith(color: context.colors.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    ),
+  );
 }

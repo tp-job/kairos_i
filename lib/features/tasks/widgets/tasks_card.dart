@@ -56,7 +56,8 @@ class _TaskRow extends StatelessWidget {
         if (due != null)
           Text(
             DateFormat('d MMM · HH:mm').format(due),
-            style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
+            style: context.text.bodySmall
+                ?.copyWith(color: context.colors.onSurfaceVariant),
           ),
       ],
     );

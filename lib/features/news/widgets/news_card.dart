@@ -42,18 +42,20 @@ class _NewsRow extends StatelessWidget {
           article.title,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+          style: context.text.labelLarge,
         ),
         const SizedBox(height: 2),
         Text(
           article.aiSummary ?? article.description,
           maxLines: 3,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
+          style: context.text.bodySmall
+              ?.copyWith(color: context.colors.onSurfaceVariant),
         ),
         Text(
           article.sourceName,
-          style: TextStyle(color: AppTheme.textMuted, fontSize: 10),
+          style: context.text.labelSmall
+              ?.copyWith(color: context.colors.onSurfaceVariant),
         ),
       ],
     );

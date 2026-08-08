@@ -44,15 +44,19 @@ class _AiCommandBarState extends ConsumerState<AiCommandBar> {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           child: Row(
             children: [
-              Icon(Icons.auto_awesome, size: 18, color: AppTheme.textMuted),
+              Icon(Icons.auto_awesome,
+                  size: 18, color: context.colors.onSurfaceVariant),
               const SizedBox(width: 10),
               Expanded(
                 child: TextField(
                   controller: _controller,
                   onSubmitted: (_) => _handleSubmit(),
-                  style: TextStyle(color: AppTheme.textPrimary),
                   decoration: const InputDecoration(
+                    filled: false,
+                    isDense: true,
                     border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
                     hintText: 'พิมพ์อะไรก็ได้ เช่น "พรุ่งนี้บ่ายโมงมีนัดส่งงาน"',
                   ),
                 ),
@@ -61,14 +65,11 @@ class _AiCommandBarState extends ConsumerState<AiCommandBar> {
                   ? SizedBox(
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppTheme.textMuted,
-                      ),
+                      child: const CircularProgressIndicator(strokeWidth: 2),
                     )
                   : IconButton(
-                      icon: Icon(Icons.arrow_upward_rounded,
-                          color: AppTheme.textPrimary),
+                      icon: const Icon(Icons.arrow_upward_rounded),
+                      color: context.colors.primary,
                       onPressed: _handleSubmit,
                     ),
             ],
@@ -100,6 +101,10 @@ class _IntentEcho extends StatelessWidget {
       'answer_question' => intent.replyText ?? '',
       _ => 'รับทราบ (${intent.role.thaiLabel})',
     };
-    return Text(text, style: TextStyle(color: AppTheme.textMuted, fontSize: 12));
+    return Text(
+      text,
+      style: context.text.bodySmall
+          ?.copyWith(color: context.colors.onSurfaceVariant),
+    );
   }
 }

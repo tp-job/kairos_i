@@ -1,6 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/theme/app_theme.dart';
 import 'providers/weather_provider.dart';
 import 'widgets/weather_detail_screen.dart';
 
@@ -14,23 +16,19 @@ import 'widgets/weather_detail_screen.dart';
 class WeatherGlassScreen extends ConsumerWidget {
   const WeatherGlassScreen({super.key});
 
-  static const _gradient = LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: [Color(0xFF94A3B8), Color(0xFF64748B)],
-  );
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final weather = ref.watch(weatherProvider);
+    final palette = context.palette;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF64748B),
       body: Container(
-        decoration: const BoxDecoration(gradient: _gradient),
+        decoration: BoxDecoration(gradient: palette.heroGradient),
         child: SafeArea(
           child: weather.when(
-            loading: () => const Center(child: CircularProgressIndicator(color: Colors.white)),
+            loading: () => Center(
+              child: CircularProgressIndicator(color: palette.onHero),
+            ),
             error: (_, _) => const _Body(
               city: 'New York',
               tempC: 10,
@@ -69,6 +67,8 @@ class _Body extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ink = context.palette.onHero;
+    final inkMuted = context.palette.onHeroVariant;
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -83,12 +83,15 @@ class _Body extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(TimeOfDay.now().format(context),
-                        style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 14, fontWeight: FontWeight.w500)),
+                        style: context.text.labelLarge
+                            ?.copyWith(color: inkMuted)),
                     const SizedBox(height: 4),
-                    Text(city, style: const TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.w400)),
+                    Text(city,
+                        style: context.text.displayMedium?.copyWith(
+                            color: ink, fontWeight: FontWeight.w400)),
                     const SizedBox(height: 12),
                     Text(_titleCase(description),
-                        style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 14)),
+                        style: context.text.bodyMedium?.copyWith(color: ink)),
                   ],
                 ),
               ),
@@ -103,15 +106,19 @@ class _Body extends StatelessWidget {
                         MaterialPageRoute(builder: (_) => const WeatherDetailScreen()),
                       ),
                       behavior: HitTestBehavior.opaque,
-                      child: const Icon(Icons.settings, color: Colors.white70, size: 16),
+                      child: Icon(Icons.settings, color: inkMuted, size: 16),
                     ),
                     const SizedBox(width: 8),
-                    const SizedBox(height: 16, width: 1, child: ColoredBox(color: Colors.white30)),
+                    SizedBox(
+                      height: 16,
+                      width: 1,
+                      child: ColoredBox(color: inkMuted),
+                    ),
                     const SizedBox(width: 8),
                     GestureDetector(
                       onTap: () => Navigator.of(context).maybePop(),
                       behavior: HitTestBehavior.opaque,
-                      child: const Icon(Icons.home_outlined, color: Colors.white, size: 16),
+                      child: Icon(Icons.home_outlined, color: ink, size: 16),
                     ),
                   ],
                 ),
@@ -123,15 +130,20 @@ class _Body extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Icon(Icons.wb_sunny_outlined, color: Colors.white, size: 48),
+              Icon(Icons.wb_sunny_outlined, color: ink, size: 48),
               const Spacer(),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text('${tempC.round()}°',
-                      style: const TextStyle(color: Colors.white, fontSize: 72, fontWeight: FontWeight.w300, height: 1)),
+                      style: TextStyle(
+                          color: ink,
+                          fontSize: 72,
+                          fontWeight: FontWeight.w300,
+                          height: 1)),
                   Text('/ Real Feel ${feelsLikeC.round()}°',
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12)),
+                      style: context.text.bodySmall
+                          ?.copyWith(color: inkMuted)),
                 ],
               ),
             ],
@@ -143,20 +155,18 @@ class _Body extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text('DETAILS:',
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.8),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 1.5,
-                  )),
-              const _GlassPill(
-                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  style: context.text.labelMedium
+                      ?.copyWith(color: inkMuted, letterSpacing: 1.5)),
+              _GlassPill(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('weatherglobal.com', style: TextStyle(color: Colors.white, fontSize: 12)),
-                    SizedBox(width: 4),
-                    Icon(Icons.open_in_new, color: Colors.white, size: 12),
+                    Text('weatherglobal.com',
+                        style: context.text.bodySmall?.copyWith(color: ink)),
+                    const SizedBox(width: 4),
+                    Icon(Icons.open_in_new, color: ink, size: 12),
                   ],
                 ),
               ),
@@ -202,6 +212,7 @@ class _GlassPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ink = context.palette.onHero;
     return ClipRRect(
       borderRadius: BorderRadius.circular(999),
       child: BackdropFilter(
@@ -209,9 +220,9 @@ class _GlassPill extends StatelessWidget {
         child: Container(
           padding: padding,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.15),
+            color: ink.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+            border: Border.all(color: ink.withValues(alpha: 0.3)),
           ),
           child: child,
         ),
@@ -228,6 +239,7 @@ class _Detail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ink = context.palette.onHero;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -235,14 +247,17 @@ class _Detail extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, color: Colors.white, size: 14),
+              Icon(icon, color: ink, size: 14),
               const SizedBox(width: 6),
-              Text(label, style: const TextStyle(color: Colors.white, fontSize: 13)),
+              Text(label,
+                  style: context.text.bodySmall?.copyWith(color: ink)),
             ],
           ),
         ),
         const SizedBox(height: 8),
-        Text(value, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w400)),
+        Text(value,
+            style: context.text.titleLarge
+                ?.copyWith(color: ink, fontWeight: FontWeight.w400)),
       ],
     );
   }
@@ -273,12 +288,18 @@ class _HourlyTrend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ink = context.palette.onHero;
     return SizedBox(
       height: 96,
       child: Stack(
         children: [
           Positioned.fill(
-            child: CustomPaint(painter: _TrendPainter(_points.map((p) => p.level).toList())),
+            child: CustomPaint(
+              painter: _TrendPainter(
+                _points.map((p) => p.level).toList(),
+                ink,
+              ),
+            ),
           ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -288,11 +309,14 @@ class _HourlyTrend extends StatelessWidget {
                 Column(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    Text(p.temp, style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 12)),
+                    Text(p.temp,
+                        style: context.text.bodySmall?.copyWith(color: ink)),
                     const SizedBox(height: 20),
-                    Icon(p.icon, color: Colors.white.withValues(alpha: 0.85), size: 16),
+                    Icon(p.icon,
+                        color: ink.withValues(alpha: 0.85), size: 16),
                     const SizedBox(height: 4),
-                    Text(p.label, style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 11)),
+                    Text(p.label,
+                        style: context.text.labelSmall?.copyWith(color: ink)),
                   ],
                 ),
             ],
@@ -307,8 +331,10 @@ class _HourlyTrend extends StatelessWidget {
 /// [levels] (0..1) are mapped into the top ~40px band so the line sits
 /// above the temperature labels.
 class _TrendPainter extends CustomPainter {
-  _TrendPainter(this.levels);
+  _TrendPainter(this.levels, this.ink);
+
   final List<double> levels;
+  final Color ink;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -320,7 +346,7 @@ class _TrendPainter extends CustomPainter {
     Offset pointAt(int i) => Offset(dx * i, bandTop + (1 - levels[i]) * bandHeight);
 
     final line = Paint()
-      ..color = Colors.white.withValues(alpha: 0.5)
+      ..color = ink.withValues(alpha: 0.5)
       ..strokeWidth = 1.5
       ..style = PaintingStyle.stroke;
 
@@ -333,12 +359,13 @@ class _TrendPainter extends CustomPainter {
     }
     canvas.drawPath(path, line);
 
-    final dot = Paint()..color = Colors.white.withValues(alpha: 0.85);
+    final dot = Paint()..color = ink.withValues(alpha: 0.85);
     for (var i = 0; i < levels.length; i++) {
       canvas.drawCircle(pointAt(i), 3, dot);
     }
   }
 
   @override
-  bool shouldRepaint(covariant _TrendPainter oldDelegate) => oldDelegate.levels != levels;
+  bool shouldRepaint(covariant _TrendPainter oldDelegate) =>
+      oldDelegate.levels != levels || oldDelegate.ink != ink;
 }

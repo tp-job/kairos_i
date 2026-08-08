@@ -212,7 +212,7 @@ class _LocationLabel extends StatelessWidget {
         Text(
           thaiName,
           textAlign: TextAlign.center,
-          style: GoogleFonts.ibmPlexSansThai(
+          style: GoogleFonts.plusJakartaSans(
             color: palette.ink,
             fontSize: 15,
             fontWeight: FontWeight.w500,
@@ -263,7 +263,7 @@ class _FullScreenError extends StatelessWidget {
           child: Text(
             'โหลดข้อมูลไม่สำเร็จ\n$message',
             textAlign: TextAlign.center,
-            style: GoogleFonts.ibmPlexSansThai(
+            style: GoogleFonts.plusJakartaSans(
               color: const Color(0xFF1E1B18),
               fontSize: 16,
             ),

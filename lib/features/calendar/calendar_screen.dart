@@ -1,39 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import '../../core/theme/app_theme.dart';
 import '../../core/theme/design_tokens.dart';
+import '../tasks/models/task_model.dart';
+import '../tasks/providers/tasks_provider.dart';
+import '../tasks/widgets/add_task_sheet.dart';
 
 /// Timeline / calendar page — the second screen of the
-/// `homepage_and_calender` reference. A light "Today" header with a
+/// `homepage_and_calender` reference. A light \"Today\" header with a
 /// horizontal date strip and a vertical timeline of the day's items.
 ///
 /// The homepage half of that mockup is already implemented by
 /// [DashboardScreen], so this page delivers the calendar half. It's the
-/// screen behind the bottom nav's "docs" tab (index 1).
-class CalendarScreen extends StatefulWidget {
+/// screen behind the bottom nav's \"docs\" tab (index 1).
+class CalendarScreen extends ConsumerStatefulWidget {
   const CalendarScreen({super.key});
 
   @override
-  State<CalendarScreen> createState() => _CalendarScreenState();
+  ConsumerState<CalendarScreen> createState() => _CalendarScreenState();
 }
 
-class _CalendarScreenState extends State<CalendarScreen> {
-  /// Seven days centered on the selected one. Real data would come from a
-  /// calendar provider; kept local so the screen is explorable standalone.
+class _CalendarScreenState extends ConsumerState<CalendarScreen> {
+  /// Seven days centered on the selected one.
   late final List<DateTime> _days;
   int _selected = 3; // "today" sits 4th in the strip, matching the mockup
-
-  static const _timeline = <_TimelineEntry>[
-    _TimelineEntry(
-      title: 'Meeting',
-      time: '9.00 AM',
-      subtitle: 'Discuss team task for the day',
-      featured: true,
-      attendees: 3,
-    ),
-    _TimelineEntry(title: 'Icon set', time: '9.00 AM', subtitle: 'Edit icons for team task for next week'),
-    _TimelineEntry(title: 'Prototype', time: '9.00 AM', subtitle: 'Make and send prototype to the client'),
-    _TimelineEntry(title: 'Check asset', time: '9.00 AM', subtitle: 'Start checking asset'),
-  ];
 
   @override
   void initState() {
@@ -45,8 +36,13 @@ class _CalendarScreenState extends State<CalendarScreen> {
   @override
   Widget build(BuildContext context) {
     final selectedDate = _days[_selected];
+    // The timeline is the local task store filtered to the selected day —
+    // the same store the "+" sheet writes to, so a new task shows up here
+    // the moment it's saved.
+    final tasks = ref.watch(tasksForDayProvider(selectedDate));
+
     return Scaffold(
-      backgroundColor: DesignTokens.cardWhite,
+      backgroundColor: Colors.transparent,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -58,18 +54,61 @@ class _CalendarScreenState extends State<CalendarScreen> {
           ),
           const SizedBox(height: 8),
           Expanded(
-            child: ListView.builder(
-              // Bottom padding clears the shell's floating nav bar.
-              padding: const EdgeInsets.fromLTRB(24, 16, 24, 140),
-              itemCount: _timeline.length,
-              itemBuilder: (context, i) => _TimelineRow(
-                entry: _timeline[i],
-                isFirst: i == 0,
-                isLast: i == _timeline.length - 1,
-              ),
-            ),
+            child: tasks.isEmpty
+                ? _EmptyDay(onAdd: () => openAddTask(context, ref))
+                : ListView.builder(
+                    // Bottom padding clears the shell's floating nav bar.
+                    padding: const EdgeInsets.fromLTRB(24, 16, 24, 140),
+                    itemCount: tasks.length,
+                    itemBuilder: (context, i) => _TimelineRow(
+                      task: tasks[i],
+                      // The first task of the day gets the hero treatment.
+                      featured: i == 0,
+                      isLast: i == tasks.length - 1,
+                      onToggleDone: () => ref
+                          .read(localTasksProvider.notifier)
+                          .toggleDone(tasks[i].id),
+                    ),
+                  ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _EmptyDay extends StatelessWidget {
+  const _EmptyDay({required this.onAdd});
+  final VoidCallback onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(40, 0, 40, 140),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.event_available_rounded,
+                size: 40, color: context.colors.onSurfaceVariant),
+            const SizedBox(height: 12),
+            Text(
+              'ยังไม่มีงานในวันนี้',
+              style: text.bodyMedium
+                  ?.copyWith(color: context.colors.onSurfaceVariant),
+            ),
+            const SizedBox(height: 16),
+            TextButton.icon(
+              onPressed: onAdd,
+              icon: const Icon(Icons.add_rounded, size: 18),
+              label: const Text('เพิ่มงาน'),
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -83,6 +122,7 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 56, 24, 8),
       child: Row(
@@ -94,16 +134,13 @@ class _Header extends StatelessWidget {
               children: [
                 Text(
                   DateFormat('MMMM d, yyyy').format(date),
-                  style: const TextStyle(fontSize: 13, color: DesignTokens.textMuted),
+                  style: context.text.bodySmall
+                      ?.copyWith(color: cs.onSurfaceVariant),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   _relativeLabel(date),
-                  style: const TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.w700,
-                    color: DesignTokens.textStrong,
-                  ),
+                  style: context.text.displayMedium,
                 ),
               ],
             ),
@@ -112,11 +149,12 @@ class _Header extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: DesignTokens.secondaryCard,
+              color: cs.surfaceContainerHigh,
               shape: BoxShape.circle,
-              border: Border.all(color: DesignTokens.hairline),
+              border: Border.all(color: cs.outlineVariant),
             ),
-            child: const Icon(Icons.person_rounded, size: 22, color: DesignTokens.textMuted),
+            child: Icon(Icons.person_rounded,
+                size: 22, color: cs.onSurfaceVariant),
           ),
         ],
       ),
@@ -145,6 +183,7 @@ class _DateStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
     return SizedBox(
       height: 72,
       child: ListView.separated(
@@ -155,48 +194,48 @@ class _DateStrip extends StatelessWidget {
         itemBuilder: (context, i) {
           final d = days[i];
           final active = i == selected;
-          return GestureDetector(
-            onTap: () => onSelect(i),
-            behavior: HitTestBehavior.opaque,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              width: active ? 52 : 40,
-              decoration: BoxDecoration(
-                color: active ? DesignTokens.brand : Colors.transparent,
-                borderRadius: BorderRadius.circular(26),
-                boxShadow: active
-                    ? [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 12, offset: const Offset(0, 6))]
-                    : null,
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    DateFormat('d').format(d),
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: active ? FontWeight.w700 : FontWeight.w400,
-                      color: active ? Colors.white : DesignTokens.textFaint,
+          final fg = active ? cs.onPrimary : cs.onSurfaceVariant;
+          return Semantics(
+            button: true,
+            selected: active,
+            label: DateFormat('EEEE d MMMM').format(d),
+            child: GestureDetector(
+              onTap: () => onSelect(i),
+              behavior: HitTestBehavior.opaque,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                width: active ? 52 : 44,
+                decoration: BoxDecoration(
+                  color: active ? cs.primary : cs.surfaceContainerHigh,
+                  borderRadius: BorderRadius.circular(26),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      DateFormat('d').format(d),
+                      style: context.text.labelLarge?.copyWith(
+                        color: fg,
+                        fontWeight:
+                            active ? FontWeight.w700 : FontWeight.w500,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    DateFormat('E').format(d).substring(0, 3),
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: active ? Colors.white : DesignTokens.textFaint,
+                    const SizedBox(height: 2),
+                    Text(
+                      DateFormat('E').format(d).substring(0, 3),
+                      style: context.text.labelSmall?.copyWith(color: fg),
                     ),
-                  ),
-                  if (active) ...[
-                    const SizedBox(height: 4),
-                    Container(
-                      width: 4,
-                      height: 4,
-                      decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                    ),
+                    if (active) ...[
+                      const SizedBox(height: 4),
+                      Container(
+                        width: 4,
+                        height: 4,
+                        decoration: BoxDecoration(
+                            color: cs.onPrimary, shape: BoxShape.circle),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           );
@@ -208,31 +247,28 @@ class _DateStrip extends StatelessWidget {
 
 // --- Timeline --------------------------------------------------------------
 
-class _TimelineEntry {
-  const _TimelineEntry({
-    required this.title,
-    required this.time,
-    required this.subtitle,
-    this.featured = false,
-    this.attendees = 0,
-  });
-
-  final String title;
-  final String time;
-  final String subtitle;
-  final bool featured;
-  final int attendees;
+/// Formats a task's due time for the timeline, e.g. "9.00 AM".
+String _timeLabel(TaskModel task) {
+  final due = task.dueDate;
+  return due == null ? '' : DateFormat('h.mm a').format(due);
 }
 
 class _TimelineRow extends StatelessWidget {
-  const _TimelineRow({required this.entry, required this.isFirst, required this.isLast});
+  const _TimelineRow({
+    required this.task,
+    required this.featured,
+    required this.isLast,
+    required this.onToggleDone,
+  });
 
-  final _TimelineEntry entry;
-  final bool isFirst;
+  final TaskModel task;
+  final bool featured;
   final bool isLast;
+  final VoidCallback onToggleDone;
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -246,16 +282,18 @@ class _TimelineRow extends StatelessWidget {
                   width: 28,
                   height: 28,
                   decoration: BoxDecoration(
-                    color: entry.featured ? DesignTokens.secondaryCard : DesignTokens.cardWhite,
+                    color: featured
+                        ? cs.primaryContainer
+                        : cs.surfaceContainerHighest,
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 4),
+                    border: Border.all(color: cs.surface, width: 4),
                   ),
                   child: Center(
                     child: Container(
                       width: 8,
                       height: 8,
                       decoration: BoxDecoration(
-                        color: entry.featured ? DesignTokens.brand : DesignTokens.hairline,
+                        color: featured ? cs.primary : cs.outline,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -263,7 +301,7 @@ class _TimelineRow extends StatelessWidget {
                 ),
                 if (!isLast)
                   Expanded(
-                    child: Container(width: 2, color: DesignTokens.hairline),
+                    child: Container(width: 2, color: cs.outlineVariant),
                   ),
               ],
             ),
@@ -272,7 +310,9 @@ class _TimelineRow extends StatelessWidget {
           Expanded(
             child: Padding(
               padding: EdgeInsets.only(bottom: isLast ? 0 : 28, top: 2),
-              child: entry.featured ? _FeaturedCard(entry: entry) : _PlainItem(entry: entry),
+              child: featured
+                  ? _FeaturedCard(task: task, onToggleDone: onToggleDone)
+                  : _PlainItem(task: task, onToggleDone: onToggleDone),
             ),
           ),
         ],
@@ -282,17 +322,26 @@ class _TimelineRow extends StatelessWidget {
 }
 
 class _FeaturedCard extends StatelessWidget {
-  const _FeaturedCard({required this.entry});
-  final _TimelineEntry entry;
+  const _FeaturedCard({required this.task, required this.onToggleDone});
+  final TaskModel task;
+  final VoidCallback onToggleDone;
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final palette = context.palette;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: DesignTokens.brandGradient,
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.12), blurRadius: 16, offset: const Offset(0, 6))],
+        gradient: palette.heroGradient,
+        borderRadius: BorderRadius.circular(DesignTokens.radius2xl),
+        boxShadow: [
+          BoxShadow(
+            color: cs.primary.withValues(alpha: 0.25),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -301,30 +350,94 @@ class _FeaturedCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(entry.title,
-                  style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
-              Text(entry.time, style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12)),
+              Expanded(
+                child: Text(
+                  task.name,
+                  style: context.text.titleMedium?.copyWith(
+                    color: palette.onHero,
+                    fontWeight: FontWeight.w700,
+                    decoration: task.done ? TextDecoration.lineThrough : null,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(_timeLabel(task),
+                  style: context.text.bodySmall
+                      ?.copyWith(color: palette.onHeroVariant)),
             ],
           ),
-          const SizedBox(height: 6),
-          Text(
-            entry.subtitle,
-            style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 13, height: 1.4),
-          ),
+          if (task.description.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              task.description,
+              style: context.text.bodySmall
+                  ?.copyWith(color: palette.onHeroVariant, height: 1.4),
+            ),
+          ],
           const SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _AvatarStack(count: entry.attendees),
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
-                child: const Icon(Icons.check, size: 16, color: DesignTokens.brand),
-              ),
+              _AvatarStack(count: task.attendees),
+              _DoneButton(done: task.done, onTap: onToggleDone, onBrand: true),
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Marks a task complete. The one interactive control on a timeline row,
+/// so it carries the semantics and a full-size hit target.
+class _DoneButton extends StatelessWidget {
+  const _DoneButton({
+    required this.done,
+    required this.onTap,
+    this.onBrand = false,
+  });
+
+  final bool done;
+  final VoidCallback onTap;
+
+  /// True when sitting on the brand gradient, where the palette inverts.
+  final bool onBrand;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = context.colors;
+    final palette = context.palette;
+    return Semantics(
+      button: true,
+      checked: done,
+      label: done ? 'ทำเสร็จแล้ว แตะเพื่อยกเลิก' : 'ทำเครื่องหมายว่าเสร็จ',
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(DesignTokens.radiusFull),
+        child: Padding(
+          // Pads a 32px visual control out to a 48px touch target.
+          padding: const EdgeInsets.all(8),
+          child: Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: onBrand
+                  ? palette.onHero
+                  : (done ? cs.primary : cs.surfaceContainerLowest),
+              borderRadius: BorderRadius.circular(10),
+              border: onBrand || done
+                  ? null
+                  : Border.all(color: cs.outline, width: 2),
+            ),
+            child: Icon(
+              Icons.check,
+              size: 16,
+              color: onBrand
+                  ? (done ? cs.primary : cs.primary.withValues(alpha: 0.35))
+                  : (done ? cs.onPrimary : cs.onSurfaceVariant),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -336,6 +449,7 @@ class _AvatarStack extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
     return SizedBox(
       height: 32,
       width: count == 0 ? 0 : 32.0 + (count - 1) * 22,
@@ -348,11 +462,12 @@ class _AvatarStack extends StatelessWidget {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: DesignTokens.textMuted,
+                  color: cs.secondaryContainer,
                   shape: BoxShape.circle,
-                  border: Border.all(color: DesignTokens.brandViolet, width: 2),
+                  border: Border.all(color: cs.primary, width: 2),
                 ),
-                child: const Icon(Icons.person_rounded, size: 16, color: Colors.white),
+                child: Icon(Icons.person_rounded,
+                    size: 16, color: cs.onSecondaryContainer),
               ),
             ),
         ],
@@ -362,25 +477,51 @@ class _AvatarStack extends StatelessWidget {
 }
 
 class _PlainItem extends StatelessWidget {
-  const _PlainItem({required this.entry});
-  final _TimelineEntry entry;
+  const _PlainItem({required this.task, required this.onToggleDone});
+  final TaskModel task;
+  final VoidCallback onToggleDone;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    final cs = context.colors;
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(entry.title,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: DesignTokens.textStrong)),
-            Text(entry.time, style: const TextStyle(fontSize: 12, color: DesignTokens.textFaint)),
-          ],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      task.name,
+                      style: context.text.titleMedium?.copyWith(
+                        color: task.done ? cs.onSurfaceVariant : cs.onSurface,
+                        fontWeight: FontWeight.w700,
+                        decoration:
+                            task.done ? TextDecoration.lineThrough : null,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(_timeLabel(task),
+                      style: context.text.bodySmall
+                          ?.copyWith(color: cs.onSurfaceVariant)),
+                ],
+              ),
+              if (task.description.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(task.description,
+                    style: context.text.bodySmall
+                        ?.copyWith(color: cs.onSurfaceVariant, height: 1.3)),
+              ],
+            ],
+          ),
         ),
-        const SizedBox(height: 4),
-        Text(entry.subtitle,
-            style: const TextStyle(fontSize: 13, color: DesignTokens.textFaint, height: 1.3)),
+        const SizedBox(width: 8),
+        _DoneButton(done: task.done, onTap: onToggleDone),
       ],
     );
   }

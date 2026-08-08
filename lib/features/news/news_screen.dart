@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/theme/app_theme.dart';
 import '../../core/theme/design_tokens.dart';
 import 'models/news_model.dart';
 import 'providers/news_provider.dart';
@@ -12,10 +14,6 @@ import 'providers/news_provider.dart';
 class NewsScreen extends ConsumerWidget {
   const NewsScreen({super.key});
 
-  // Template accent — a pale lavender used for the category label.
-  static const _lavender = Color(0xFFD6D6FB);
-  static const _canvas = Color(0xFF0C0C0C);
-
   static const _fallbackTitle = 'How to keep your account secure?';
   static const _fallbackBody =
       'Your browser history holds personal information that can be easily '
@@ -27,19 +25,21 @@ class NewsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final news = ref.watch(newsProvider);
+    final cs = context.colors;
 
     return Scaffold(
-      backgroundColor: _canvas,
+      // Transparent so the ambient mesh backdrop bleeds through.
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         bottom: false,
         child: RefreshIndicator(
-          color: Colors.white,
-          backgroundColor: _canvas,
+          color: cs.primary,
+          backgroundColor: cs.surfaceContainerHigh,
           onRefresh: () => ref.refresh(newsProvider.future),
           child: CustomScrollView(
             slivers: [
               const SliverToBoxAdapter(child: _Header()),
-              const SliverToBoxAdapter(child: _CategoryLabel(lavender: _lavender)),
+              const SliverToBoxAdapter(child: _CategoryLabel()),
               SliverToBoxAdapter(
                 child: news.when(
                   loading: () => const _HeroArticleCard(
@@ -63,7 +63,8 @@ class NewsScreen extends ConsumerWidget {
               ),
               news.maybeWhen(
                 data: (items) => SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+                  padding: const EdgeInsets.fromLTRB(
+                      18, 8, 18, DesignTokens.navBarClearance),
                   sliver: SliverList.separated(
                     itemCount: items.length > 1 ? items.length - 1 : 0,
                     separatorBuilder: (_, _) => const SizedBox(height: 12),
@@ -85,6 +86,7 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 4),
       child: Column(
@@ -96,24 +98,27 @@ class _Header extends StatelessWidget {
               Container(
                 width: 40,
                 height: 40,
-                decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                child: const Icon(Icons.auto_stories_rounded, size: 20, color: NewsScreen._canvas),
+                decoration: BoxDecoration(
+                  color: cs.primary,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.auto_stories_rounded, size: 20, color: cs.onPrimary),
               ),
               Row(
                 children: [
-                  const Icon(Icons.search, color: Colors.white, size: 22),
+                  Icon(Icons.search, color: cs.onSurface, size: 22),
                   const SizedBox(width: 16),
                   Stack(
                     clipBehavior: Clip.none,
                     children: [
-                      const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 22),
+                      Icon(Icons.notifications_none_rounded, color: cs.onSurface, size: 22),
                       Positioned(
                         top: -1,
                         right: -1,
                         child: Container(
                           width: 8,
                           height: 8,
-                          decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                          decoration: BoxDecoration(color: cs.error, shape: BoxShape.circle),
                         ),
                       ),
                     ],
@@ -123,16 +128,17 @@ class _Header extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          const Text(
-            'Articles',
-            style: TextStyle(color: Colors.white, fontSize: 40, fontWeight: FontWeight.w600, letterSpacing: -1),
-          ),
-          const SizedBox(height: 8),
+          Text('Articles', style: context.text.displayLarge),
+          const SizedBox(height: DesignTokens.space2),
           Row(
             children: [
-              Text('Latest article', style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 14)),
+              Text(
+                'Latest article',
+                style: context.text.bodyMedium
+                    ?.copyWith(color: cs.onSurfaceVariant),
+              ),
               const SizedBox(width: 4),
-              Icon(Icons.chevron_right, color: Colors.white.withValues(alpha: 0.5), size: 16),
+              Icon(Icons.chevron_right, color: cs.onSurfaceVariant, size: 16),
             ],
           ),
         ],
@@ -142,18 +148,18 @@ class _Header extends StatelessWidget {
 }
 
 class _CategoryLabel extends StatelessWidget {
-  const _CategoryLabel({required this.lavender});
-  final Color lavender;
+  const _CategoryLabel();
 
   @override
   Widget build(BuildContext context) {
-    // Extra bottom padding leaves room for the hero card to slide up under
-    // it (the card is translated up by 24 to create the overlap).
+    final cs = context.colors;
+    final bgColor = cs.primaryContainer;
+
     return Container(
       margin: const EdgeInsets.fromLTRB(18, 16, 18, 0),
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 44),
       decoration: BoxDecoration(
-        color: lavender,
+        color: bgColor,
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(24),
           topRight: Radius.circular(24),
@@ -166,27 +172,38 @@ class _CategoryLabel extends StatelessWidget {
           Container(
             width: 32,
             height: 32,
-            decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.1), shape: BoxShape.circle),
-            child: const Icon(Icons.account_balance_wallet_rounded, size: 16, color: Colors.black),
+            decoration: BoxDecoration(
+              color: cs.onPrimaryContainer.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(Icons.account_balance_wallet_rounded, size: 16, color: cs.onPrimaryContainer),
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Personal finance',
-                    style: TextStyle(color: Colors.black, fontSize: 14, fontWeight: FontWeight.w600)),
-                SizedBox(height: 2),
+                    style: context.text.titleSmall
+                        ?.copyWith(color: cs.onPrimaryContainer)),
+                const SizedBox(height: 2),
                 Text('Everything you need to know',
-                    style: TextStyle(color: Colors.black54, fontSize: 12)),
+                    style: context.text.bodySmall?.copyWith(
+                        color: cs.onPrimaryContainer.withValues(alpha: 0.75))),
               ],
             ),
           ),
           Row(
             children: [
-              const Text('3-5min', style: TextStyle(color: Colors.black54, fontSize: 12, fontWeight: FontWeight.w500)),
+              Text(
+                '3-5min',
+                style: context.text.labelMedium?.copyWith(
+                    color: cs.onPrimaryContainer.withValues(alpha: 0.75)),
+              ),
               const SizedBox(width: 4),
-              Icon(Icons.schedule, size: 14, color: Colors.black.withValues(alpha: 0.55)),
+              Icon(Icons.schedule,
+                  size: 14,
+                  color: cs.onPrimaryContainer.withValues(alpha: 0.75)),
             ],
           ),
         ],
@@ -210,72 +227,70 @@ class _HeroArticleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
+    final palette = context.palette;
     return Transform.translate(
       offset: const Offset(0, -24),
       child: Container(
-      margin: const EdgeInsets.symmetric(horizontal: 18),
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 24, offset: const Offset(0, 12))],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Image placeholder (network images from the reference are dropped
-          // to keep the app self-contained and offline-friendly).
-          Container(
-            height: 180,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF3F3F46), Color(0xFF18181B)],
+        margin: const EdgeInsets.symmetric(horizontal: 18),
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(DesignTokens.radius2xl),
+          border: Border.all(color: cs.outlineVariant),
+          boxShadow: [
+            BoxShadow(
+              color: palette.shadow,
+              blurRadius: 24,
+              offset: const Offset(0, 12),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image placeholder
+            Container(
+              height: 180,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(DesignTokens.radiusXl),
+                gradient: palette.heroGradient,
+              ),
+              child: Center(
+                child: Icon(Icons.image_outlined,
+                    color: palette.onHeroVariant, size: 40),
               ),
             ),
-            child: const Center(child: Icon(Icons.image_outlined, color: Colors.white24, size: 40)),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (source != null) ...[
-                  Text(
-                    source!.toUpperCase(),
-                    style: const TextStyle(
-                      color: DesignTokens.textFaint,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 1,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (source != null) ...[
+                    Text(
+                      source!.toUpperCase(),
+                      style: context.text.labelSmall
+                          ?.copyWith(color: cs.primary, letterSpacing: 1),
                     ),
-                  ),
-                  const SizedBox(height: 8),
+                    const SizedBox(height: 8),
+                  ],
+                  Text(title, style: context.text.headlineSmall),
+                  const SizedBox(height: DesignTokens.space3),
+                  if (loading)
+                    const _BodySkeleton()
+                  else
+                    Text(
+                      body,
+                      style: context.text.bodyMedium?.copyWith(
+                        color: cs.onSurfaceVariant,
+                        height: 1.5,
+                      ),
+                    ),
                 ],
-                Text(
-                  title,
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    height: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                if (loading)
-                  const _BodySkeleton()
-                else
-                  Text(
-                    body,
-                    style: const TextStyle(color: DesignTokens.textMuted, fontSize: 15, height: 1.5),
-                  ),
-              ],
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
       ),
     );
   }
@@ -287,12 +302,13 @@ class _ArticleRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(DesignTokens.space4),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        color: cs.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(DesignTokens.radiusXl),
+        border: Border.all(color: cs.outlineVariant),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -301,10 +317,11 @@ class _ArticleRow extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.08),
+              color: cs.primaryContainer,
               borderRadius: BorderRadius.circular(14),
             ),
-            child: const Icon(Icons.article_outlined, color: Colors.white54, size: 22),
+            child: Icon(Icons.article_outlined,
+                color: cs.onPrimaryContainer, size: 22),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -315,17 +332,19 @@ class _ArticleRow extends StatelessWidget {
                   article.title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600, height: 1.3),
+                  style: context.text.titleSmall?.copyWith(height: 1.3),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   article.sourceName,
-                  style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 11),
+                  style: context.text.labelSmall
+                      ?.copyWith(color: cs.onSurfaceVariant),
                 ),
               ],
             ),
           ),
-          Icon(Icons.arrow_outward_rounded, color: Colors.white.withValues(alpha: 0.4), size: 18),
+          Icon(Icons.arrow_outward_rounded,
+              color: cs.onSurfaceVariant, size: 18),
         ],
       ),
     );
@@ -337,6 +356,7 @@ class _BodySkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = context.colors;
     return Column(
       children: [
         for (var i = 0; i < 3; i++)
@@ -346,7 +366,7 @@ class _BodySkeleton extends StatelessWidget {
               height: 12,
               width: i == 2 ? 160 : double.infinity,
               decoration: BoxDecoration(
-                color: DesignTokens.hairline,
+                color: cs.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(6),
               ),
             ),

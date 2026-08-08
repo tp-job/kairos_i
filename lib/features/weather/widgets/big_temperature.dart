@@ -18,14 +18,14 @@ class BigTemperature extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final numberStyle = GoogleFonts.ibmPlexSansThai(
+    final numberStyle = GoogleFonts.plusJakartaSans(
       fontSize: 96,
       fontWeight: FontWeight.w500,
       height: 1.0,
       color: color,
       letterSpacing: -2,
     );
-    final unitStyle = GoogleFonts.ibmPlexSansThai(
+    final unitStyle = GoogleFonts.plusJakartaSans(
       fontSize: 22,
       fontWeight: FontWeight.w500,
       height: 1.1,

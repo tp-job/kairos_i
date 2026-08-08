@@ -36,7 +36,8 @@ class _QuoteRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = quote.isUp ? const Color(0xFF3E8E5A) : AppTheme.danger;
+    final palette = context.palette;
+    final color = quote.isUp ? palette.success : context.colors.error;
 
     return Row(
       children: [
@@ -44,7 +45,7 @@ class _QuoteRow extends StatelessWidget {
           width: 60,
           child: Text(
             quote.symbol,
-            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+            style: context.text.labelLarge,
           ),
         ),
         SizedBox(
@@ -74,7 +75,7 @@ class _QuoteRow extends StatelessWidget {
         const Spacer(),
         Text(
           '${quote.isUp ? '+' : ''}${quote.changePercent.toStringAsFixed(2)}%',
-          style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 13),
+          style: context.text.labelLarge?.copyWith(color: color),
         ),
       ],
     );
