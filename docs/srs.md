@@ -65,11 +65,11 @@ of our own. §5.2 explains why that is currently a security defect.
 | Metric | Value |
 |---|---|
 | Dart source | 54 files, ~8,200 LOC |
-| Test files / cases | 5 / 55 (all passing) |
+| Test files / cases | 6 / 64 (all passing) |
 | State management | Riverpod 2.6 (`StateNotifier` + `FutureProvider`) |
 | HTTP | dio 5.7, one shared instance, no interceptors enabled |
 | Persistence | **None** |
-| Routing | Imperative `Navigator.push`; no router package |
+| Routing | Declarative `go_router` 17.5 — one route table, per-tab nested navigators ([user-flow.md](user-flow.md)) |
 | Localization | Thai strings inline in widgets; no ARB |
 | CI | None |
 
@@ -203,17 +203,17 @@ likely source of rate-limit errors, and the latency is paid on every visit.
 
 | ID | Requirement | Status |
 |---|---|---|
-| **FR-7.1** | A single floating bottom nav SHALL host four primary tabs plus a center quick-add, preserving each tab's scroll and provider state. | `[IMPL]` |
+| **FR-7.1** | A single floating bottom nav SHALL host four primary tabs plus a center quick-add, preserving each tab's scroll and provider state. | `[IMPL]` — now via `StatefulShellRoute.indexedStack`; each tab also keeps its own stack |
 | **FR-7.2** | Every color SHALL resolve from `Theme.of(context)`; only `material_scheme.dart` and `kairos_palette.dart` may contain hex. | `[IMPL]` |
 | **FR-7.3** | The app SHALL ship light and dark themes at three contrast levels, following the OS setting live. | `[IMPL]` |
 | **FR-7.4** | Theme mode and contrast SHALL persist across restart. | `[PLANNED]` |
-| **FR-7.5** | The Chat tab SHALL provide real conversations. | `[MOCK]` — **DEF-6** |
+| **FR-7.5** | The Chat tab SHALL provide real conversations. | **Withdrawn** — DEF-6 resolved by removing the tab; Notes took the slot |
 
-**DEF-6 (product defect).** Chat is five hard-coded contacts with hard-coded
-message previews. It occupies **25% of primary navigation** while delivering
-zero function. Two honest resolutions: build it (large — needs a backend, which
-§1.2 puts out of scope for v1) or **remove the tab and reclaim the slot**. There
-is no third option that is not a lie to the user.
+**DEF-6 — closed 2026-08-11.** Chat was five hard-coded contacts occupying 25%
+of primary navigation while delivering zero function. Resolved by the second
+option: `lib/features/chat/` is deleted and Notes — real, finished, previously
+homeless in the nav — took the slot. "Chat for real" remains parked in
+[sprint-plan.md](sprint-plan.md) §6 as the backend epic it always was.
 
 ### Epic 8 — Platform & Configuration
 
@@ -224,7 +224,7 @@ is no third option that is not a lie to the user.
 | **FR-8.3** | Responses SHALL be cached with a per-endpoint TTL sufficient to stay inside every vendor's free-tier quota. | `[PLANNED]` — **DEF-5** |
 | **FR-8.4** | API credentials SHALL NOT be extractable from a distributed build. | `[PLANNED]` — **DEF-7** |
 | **FR-8.5** | A `.env.example` and a setup section in the README SHALL let a fresh checkout reach a running app. | `[PLANNED]` |
-| **FR-8.6** | Navigation SHALL be declarative and support deep links. | `[PLANNED]` |
+| **FR-8.6** | Navigation SHALL be declarative and support deep links. | `[PARTIAL]` — route table is declarative and every screen has an address ([user-flow.md](user-flow.md)); OS-level link registration (Android `intent-filter`, iOS associated domains) outstanding |
 | **FR-8.7** | User-facing strings SHALL be externalized for localization. | `[PLANNED]` |
 
 **DEF-7 (security defect, severity: high).** `.env` is declared as a **Flutter
@@ -276,7 +276,7 @@ Timeouts are set once on the shared `dio` instance: 10s connect, 15s receive.
 | **NFR-A1** | Body text ≥ 4.5:1, large text ≥ 3:1, across all six theme variants. | `[IMPL]` for hero and note surfaces — machine-checked in `test/theme_test.dart` |
 | **NFR-A2** | Interactive targets ≥ 48dp. | `[IMPL]` — `DesignTokens.minTouchTarget`, applied via component themes |
 | **NFR-A3** | Interactive controls carry Thai `Semantics` labels. | `[PARTIAL]` — unaudited |
-| **NFR-A4** | `MediaQuery.disableAnimations` is honoured by every entrance and press animation. | `[IMPL]` — `AppMotion.reduced` |
+| **NFR-A4** | `MediaQuery.disableAnimations` is honoured by every entrance, press **and route** animation. | `[IMPL]` — `AppMotion.reduced`, applied once in `KairosPage`; covered by `navigation_test.dart` |
 
 ### 5.4 Maintainability
 
@@ -299,7 +299,7 @@ Timeouts are set once on the shared `dio` instance: 10s connect, 15s receive.
 | **DEF-1** | Medium | Daily advice depends on ClickUp, so it breaks without ClickUp keys | FR-1.3 |
 | **DEF-2** | Medium | Orchestrator creates tasks from model output with no confirmation | FR-1.4, NFR-S3 |
 | **DEF-4** | Medium | News fans out 5 concurrent LLM calls per load, uncached | FR-5.3 |
-| **DEF-6** | Medium | Chat tab is entirely mock data in 25% of primary navigation | FR-7.5 |
+| ~~DEF-6~~ | ~~Medium~~ | ~~Chat tab is entirely mock data in 25% of primary navigation~~ — **closed 2026-08-11**, tab removed | FR-7.5 |
 
 ---
 

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/motion/motion.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/design_tokens.dart';
 import 'models/note_model.dart';
+import 'note_heroes.dart';
 import 'providers/notes_provider.dart';
 
 /// The single form used to both **create** and **update** a note — no API
@@ -45,7 +47,7 @@ class _NoteFormScreenState extends ConsumerState<NoteFormScreen> {
     final title = _title.text.trim();
     final body = _body.text.trim();
     if (title.isEmpty && body.isEmpty) {
-      Navigator.of(context).pop();
+      context.pop();
       return;
     }
     final resolvedTitle = title.isEmpty ? 'ไม่มีชื่อ' : title;
@@ -60,7 +62,7 @@ class _NoteFormScreenState extends ConsumerState<NoteFormScreen> {
     } else {
       notifier.add(title: resolvedTitle, body: body, colorIndex: _colorIndex);
     }
-    Navigator.of(context).pop();
+    context.pop();
   }
 
   Future<void> _delete() async {
@@ -86,7 +88,7 @@ class _NoteFormScreenState extends ConsumerState<NoteFormScreen> {
     );
     if (confirmed == true && mounted) {
       ref.read(notesProvider.notifier).delete(widget.note!.id);
-      Navigator.of(context).pop();
+      context.pop();
     }
   }
 
@@ -97,88 +99,122 @@ class _NoteFormScreenState extends ConsumerState<NoteFormScreen> {
     final ink = palette.onNote;
 
     return Scaffold(
-      backgroundColor: tint,
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _FormHeader(
-              ink: ink,
-              onBack: _save,
-              onDelete: widget.isEditing ? _delete : null,
-              onSave: _save,
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(
-                    DesignTokens.screenPadding, 8, DesignTokens.screenPadding, 32),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    FadeSlideIn(
-                      child: TextField(
-                        controller: _title,
-                        autofocus: !widget.isEditing,
-                        maxLines: null,
-                        style: context.text.headlineMedium?.copyWith(color: ink),
-                        decoration: InputDecoration(
-                          hintText: 'หัวข้อโน้ต',
-                          hintStyle: context.text.headlineMedium
-                              ?.copyWith(color: ink.withValues(alpha: 0.35)),
-                          filled: false,
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          isDense: true,
-                          contentPadding: EdgeInsets.zero,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: DesignTokens.space2),
-                    Text(
-                      widget.isEditing
-                          ? 'แก้ไขล่าสุด ${_formatTimestamp(widget.note!.updatedAt)}'
-                          : 'โน้ตใหม่',
-                      style: context.text.bodySmall
-                          ?.copyWith(color: ink.withValues(alpha: 0.6)),
-                    ),
-                    const SizedBox(height: DesignTokens.space5),
-                    TextField(
-                      controller: _body,
-                      minLines: 8,
-                      maxLines: null,
-                      style: context.text.bodyLarge
-                          ?.copyWith(color: ink, height: 1.6),
-                      decoration: InputDecoration(
-                        hintText: 'เขียนบันทึกของคุณที่นี่...',
-                        hintStyle: context.text.bodyLarge
-                            ?.copyWith(color: ink.withValues(alpha: 0.35)),
-                        filled: false,
-                        border: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                        isDense: true,
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                    ),
-                    const SizedBox(height: DesignTokens.space8),
-                    Text(
-                      'สี',
-                      style: context.text.labelLarge
-                          ?.copyWith(color: ink.withValues(alpha: 0.7)),
-                    ),
-                    const SizedBox(height: DesignTokens.space3),
-                    _ColorPicker(
-                      selected: _colorIndex,
-                      ink: ink,
-                      onSelect: (i) => setState(() => _colorIndex = i),
-                    ),
-                  ],
+      // Transparent: the tint is painted by the Hero below so it can fly in
+      // from the card rather than hard-cutting behind it.
+      backgroundColor: Colors.transparent,
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: Hero(
+              tag: widget.isEditing
+                  ? NoteHeroes.forNote(widget.note!.id)
+                  : NoteHeroes.newNote,
+              // Only the tinted surface flies; the form's content fades in on
+              // top of it via FadeSlideIn.
+              flightShuttleBuilder: (_, _, _, _, _) => Container(
+                decoration: BoxDecoration(
+                  color: tint,
+                  borderRadius: BorderRadius.circular(DesignTokens.radiusXl),
                 ),
               ),
+              child: ColoredBox(color: tint),
             ),
-          ],
-        ),
+          ),
+          SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _FormHeader(
+                  ink: ink,
+                  onBack: _save,
+                  onDelete: widget.isEditing ? _delete : null,
+                  onSave: _save,
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(
+                      DesignTokens.screenPadding,
+                      8,
+                      DesignTokens.screenPadding,
+                      32,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        FadeSlideIn(
+                          child: TextField(
+                            controller: _title,
+                            autofocus: !widget.isEditing,
+                            maxLines: null,
+                            style: context.text.headlineMedium?.copyWith(
+                              color: ink,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'หัวข้อโน้ต',
+                              hintStyle: context.text.headlineMedium?.copyWith(
+                                color: ink.withValues(alpha: 0.35),
+                              ),
+                              filled: false,
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              isDense: true,
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: DesignTokens.space2),
+                        Text(
+                          widget.isEditing
+                              ? 'แก้ไขล่าสุด ${_formatTimestamp(widget.note!.updatedAt)}'
+                              : 'โน้ตใหม่',
+                          style: context.text.bodySmall?.copyWith(
+                            color: ink.withValues(alpha: 0.6),
+                          ),
+                        ),
+                        const SizedBox(height: DesignTokens.space5),
+                        TextField(
+                          controller: _body,
+                          minLines: 8,
+                          maxLines: null,
+                          style: context.text.bodyLarge?.copyWith(
+                            color: ink,
+                            height: 1.6,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'เขียนบันทึกของคุณที่นี่...',
+                            hintStyle: context.text.bodyLarge?.copyWith(
+                              color: ink.withValues(alpha: 0.35),
+                            ),
+                            filled: false,
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            isDense: true,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                        ),
+                        const SizedBox(height: DesignTokens.space8),
+                        Text(
+                          'สี',
+                          style: context.text.labelLarge?.copyWith(
+                            color: ink.withValues(alpha: 0.7),
+                          ),
+                        ),
+                        const SizedBox(height: DesignTokens.space3),
+                        _ColorPicker(
+                          selected: _colorIndex,
+                          ink: ink,
+                          onSelect: (i) => setState(() => _colorIndex = i),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -15,8 +15,8 @@ import 'package:kairos_i/core/theme/design_tokens.dart';
 import 'package:kairos_i/core/theme/kairos_palette.dart';
 import 'package:kairos_i/core/theme/material_scheme.dart';
 import 'package:kairos_i/features/calendar/calendar_screen.dart';
-import 'package:kairos_i/features/chat/chat_screen.dart';
 import 'package:kairos_i/features/dashboard/dashboard_screen.dart';
+import 'package:kairos_i/features/news/news_screen.dart';
 import 'package:kairos_i/features/notes/notes_screen.dart';
 
 const _schemes = <String, ColorScheme>{
@@ -42,7 +42,7 @@ void main() {
     final screens = <String, Widget>{
       'dashboard': const DashboardScreen(),
       'calendar': const CalendarScreen(),
-      'chat': const ChatScreen(),
+      'news': const NewsScreen(),
       'notes': const NotesScreen(),
     };
 

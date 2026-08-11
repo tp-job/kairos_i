@@ -49,6 +49,7 @@ dependencies:
   google_fonts: ^6.2.1
   # SVG rendering for the editorial weather illustrations
   flutter_svg: ^2.0.10+1
+  go_router: ^17.5.0
 
 dev_dependencies:
   flutter_test:

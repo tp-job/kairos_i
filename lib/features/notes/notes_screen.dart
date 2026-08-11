@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/motion/motion.dart';
+import '../../core/navigation/routes.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/design_tokens.dart';
 import 'models/note_model.dart';
-import 'note_form_screen.dart';
+import 'note_heroes.dart';
 import 'providers/notes_provider.dart';
 
 /// The notes list — a two-column masonry of tinted cards. Pure local state via
-/// [notesProvider]; creating and editing both happen on [NoteFormScreen].
+/// [notesProvider]; creating and editing both happen on the note editor at
+/// `/notes/new` and `/notes/:id`.
 class NotesScreen extends ConsumerStatefulWidget {
   const NotesScreen({super.key});
 
@@ -34,21 +37,35 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
     final filtered = _search.trim().isEmpty
         ? notes
         : notes
-            .where((n) =>
-                n.title.toLowerCase().contains(_search.toLowerCase()) ||
-                n.body.toLowerCase().contains(_search.toLowerCase()))
-            .toList();
+              .where(
+                (n) =>
+                    n.title.toLowerCase().contains(_search.toLowerCase()) ||
+                    n.body.toLowerCase().contains(_search.toLowerCase()),
+              )
+              .toList();
 
     final pinned = filtered.where((n) => n.pinned).toList();
     final others = filtered.where((n) => !n.pinned).toList();
 
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const NoteFormScreen()),
+      // Lifted clear of the shell's floating nav bar. Notes only became a tab
+      // in the user-flow change; before that this screen was pushed above the
+      // shell and the default FAB position was unobstructed. Without this the
+      // button renders but cannot be tapped.
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(
+          bottom: DesignTokens.navBarClearance - kFloatingActionButtonMargin,
         ),
-        tooltip: 'เขียนโน้ตใหม่',
-        child: const Icon(Icons.add_rounded, size: 28),
+        child: FloatingActionButton(
+          // The FAB is the seed of the new note: it expands into the editor
+          // rather than being replaced by it. Retagging its *own* Hero rather
+          // than wrapping it in one — a FAB already is a Hero, and nesting two
+          // is an assertion, not a richer animation.
+          heroTag: NoteHeroes.newNote,
+          onPressed: () => context.push(Routes.noteNew),
+          tooltip: 'เขียนโน้ตใหม่',
+          child: const Icon(Icons.add_rounded, size: 28),
+        ),
       ),
       body: SafeArea(
         bottom: false,
@@ -57,7 +74,11 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
             SliverToBoxAdapter(child: _Header(count: notes.length)),
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(
-                  DesignTokens.screenPadding, 4, DesignTokens.screenPadding, 8),
+                DesignTokens.screenPadding,
+                4,
+                DesignTokens.screenPadding,
+                8,
+              ),
               sliver: SliverToBoxAdapter(
                 child: _SearchField(
                   controller: _query,
@@ -74,8 +95,14 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
               if (pinned.isNotEmpty) ...[
                 const SliverPadding(
                   padding: EdgeInsets.fromLTRB(
-                      DesignTokens.screenPadding, 8, DesignTokens.screenPadding, 8),
-                  sliver: SliverToBoxAdapter(child: _SectionLabel(text: 'ปักหมุด')),
+                    DesignTokens.screenPadding,
+                    8,
+                    DesignTokens.screenPadding,
+                    8,
+                  ),
+                  sliver: SliverToBoxAdapter(
+                    child: _SectionLabel(text: 'ปักหมุด'),
+                  ),
                 ),
                 SliverPadding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -84,8 +111,12 @@ class _NotesScreenState extends ConsumerState<NotesScreen> {
               ],
               if (others.isNotEmpty) ...[
                 SliverPadding(
-                  padding: EdgeInsets.fromLTRB(DesignTokens.screenPadding,
-                      pinned.isNotEmpty ? 16 : 8, DesignTokens.screenPadding, 8),
+                  padding: EdgeInsets.fromLTRB(
+                    DesignTokens.screenPadding,
+                    pinned.isNotEmpty ? 16 : 8,
+                    DesignTokens.screenPadding,
+                    8,
+                  ),
                   sliver: SliverToBoxAdapter(
                     child: _SectionLabel(
                       text: pinned.isNotEmpty ? 'อื่นๆ' : 'โน้ตทั้งหมด',
@@ -118,7 +149,11 @@ class _Header extends StatelessWidget {
     final scheme = context.colors;
     return Padding(
       padding: const EdgeInsets.fromLTRB(
-          DesignTokens.screenPadding, 8, DesignTokens.screenPadding, 4),
+        DesignTokens.screenPadding,
+        8,
+        DesignTokens.screenPadding,
+        4,
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -130,8 +165,9 @@ class _Header extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 '$count รายการ',
-                style: context.text.bodySmall
-                    ?.copyWith(color: scheme.onSurfaceVariant),
+                style: context.text.bodySmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -142,8 +178,11 @@ class _Header extends StatelessWidget {
               color: scheme.primaryContainer,
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.edit_note_rounded,
-                color: scheme.onPrimaryContainer, size: 22),
+            child: Icon(
+              Icons.edit_note_rounded,
+              color: scheme.onPrimaryContainer,
+              size: 22,
+            ),
           ),
         ],
       ),
@@ -257,60 +296,73 @@ class _NoteCard extends ConsumerWidget {
     final ink = palette.onNote;
 
     return PressableScale(
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => NoteFormScreen(note: note)),
-      ),
-      child: Container(
-        padding: const EdgeInsets.all(DesignTokens.space4),
-        decoration: BoxDecoration(
-          color: tint,
-          borderRadius: BorderRadius.circular(DesignTokens.radiusXl),
-          border: Border.all(color: context.colors.outlineVariant),
+      onTap: () => context.push(Routes.noteEdit(note.id)),
+      // Container transform: the note *is* the container, and its tint is its
+      // identity (FR-4.3). Only the tinted surface flies — the text inside
+      // cross-fades, which is what keeps the flight from looking like a
+      // stretched screenshot.
+      child: Hero(
+        tag: NoteHeroes.forNote(note.id),
+        flightShuttleBuilder: (_, _, _, _, _) => Container(
+          decoration: BoxDecoration(
+            color: tint,
+            borderRadius: BorderRadius.circular(DesignTokens.radiusXl),
+          ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    note.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.text.titleSmall?.copyWith(color: ink),
+        child: Container(
+          padding: const EdgeInsets.all(DesignTokens.space4),
+          decoration: BoxDecoration(
+            color: tint,
+            borderRadius: BorderRadius.circular(DesignTokens.radiusXl),
+            border: Border.all(color: context.colors.outlineVariant),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      note.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: context.text.titleSmall?.copyWith(color: ink),
+                    ),
                   ),
-                ),
-                Semantics(
-                  button: true,
-                  label: note.pinned ? 'เลิกปักหมุด' : 'ปักหมุด',
-                  child: PressableScale(
-                    onTap: () =>
-                        ref.read(notesProvider.notifier).togglePin(note.id),
-                    child: Padding(
-                      padding: const EdgeInsets.all(4),
-                      child: Icon(
-                        note.pinned
-                            ? Icons.push_pin_rounded
-                            : Icons.push_pin_outlined,
-                        size: 16,
-                        color: ink.withValues(alpha: note.pinned ? 0.9 : 0.5),
+                  Semantics(
+                    button: true,
+                    label: note.pinned ? 'เลิกปักหมุด' : 'ปักหมุด',
+                    child: PressableScale(
+                      onTap: () =>
+                          ref.read(notesProvider.notifier).togglePin(note.id),
+                      child: Padding(
+                        padding: const EdgeInsets.all(4),
+                        child: Icon(
+                          note.pinned
+                              ? Icons.push_pin_rounded
+                              : Icons.push_pin_outlined,
+                          size: 16,
+                          color: ink.withValues(alpha: note.pinned ? 0.9 : 0.5),
+                        ),
                       ),
                     ),
                   ),
+                ],
+              ),
+              if (note.body.isNotEmpty) ...[
+                const SizedBox(height: DesignTokens.space2),
+                Text(
+                  note.body,
+                  maxLines: 6,
+                  overflow: TextOverflow.ellipsis,
+                  style: context.text.bodySmall?.copyWith(
+                    color: ink.withValues(alpha: 0.8),
+                    height: 1.4,
+                  ),
                 ),
               ],
-            ),
-            if (note.body.isNotEmpty) ...[
-              const SizedBox(height: DesignTokens.space2),
-              Text(
-                note.body,
-                maxLines: 6,
-                overflow: TextOverflow.ellipsis,
-                style: context.text.bodySmall
-                    ?.copyWith(color: ink.withValues(alpha: 0.8), height: 1.4),
-              ),
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -347,8 +399,10 @@ class _EmptyState extends StatelessWidget {
                   ? 'ลองคำค้นหาอื่น'
                   : 'แตะปุ่ม + ด้านล่างเพื่อเริ่มเขียนโน้ตแรกของคุณ',
               textAlign: TextAlign.center,
-              style: context.text.bodySmall
-                  ?.copyWith(color: scheme.onSurfaceVariant, height: 1.4),
+              style: context.text.bodySmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+                height: 1.4,
+              ),
             ),
           ],
         ),

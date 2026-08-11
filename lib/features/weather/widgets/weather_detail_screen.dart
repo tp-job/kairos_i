@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/weather_condition.dart';
 import '../models/weather_model.dart';
@@ -144,7 +145,7 @@ class _TopBar extends StatelessWidget {
         IconButton(
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(),
-          onPressed: () => Navigator.of(context).maybePop(),
+          onPressed: () => context.pop(),
           icon: Icon(Icons.arrow_back, color: palette.ink, size: 20),
         ),
       ],

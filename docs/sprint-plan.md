@@ -115,8 +115,8 @@ commit is one tap, or the feature will feel worse rather than safer.
 
 | # | Item | Pts | Traces |
 |---|---|---|---|
-| 3.1 | **Remove the Chat tab**; promote Notes into the freed nav slot. Delete `chat_screen.dart` and its fixtures. | 3 | FR-7.5, DEF-6 |
-| 3.2 | Adopt `go_router`: named routes for the five screens, typed params for note/task/weather detail, deep-link support. | 5 | FR-8.6 |
+| ~~3.1~~ | ~~**Remove the Chat tab**; promote Notes into the freed nav slot.~~ **Done 2026-08-11** | 3 | FR-7.5, DEF-6 |
+| ~~3.2~~ | ~~Adopt `go_router`~~ **Done 2026-08-11** — route table, per-tab stacks, `AppMotion`-driven transitions ([user-flow.md](user-flow.md)). *OS-level deep-link registration remains open;* re-point it at a follow-up item rather than treating FR-8.6 as closed. | 5 | FR-8.6 |
 | 3.3 | Note search over title + body, incremental, with an empty-result state. | 3 | FR-4.5 |
 | 3.4 | User-editable watchlist, persisted, capped at 3 symbols with the quota reason stated in the UI copy. | 5 | FR-6.3 |
 | 3.5 | ClickUp mirror reconciliation: queue failed mirrors, retry on next foreground, show a quiet "not synced" affordance. | 3 | FR-3.6 |

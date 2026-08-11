@@ -18,12 +18,13 @@ class BottomNavBar extends StatelessWidget {
     this.onAdd,
   });
 
-  /// 0..3 mapping to dashboard / calendar / news / chat (the FAB is separate).
+  /// 0..3 mapping to dashboard / calendar / news / notes — the same order as
+  /// `Routes.branchOrder` (the FAB is separate, and is not a branch).
   final int currentIndex;
   final ValueChanged<int>? onTap;
   final VoidCallback? onAdd;
 
-  static const _labels = ['หน้าแรก', 'ปฏิทิน', 'ข่าว', 'แชท'];
+  static const _labels = ['หน้าแรก', 'ปฏิทิน', 'ข่าว', 'โน้ต'];
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +85,7 @@ class BottomNavBar extends StatelessWidget {
                       onTap: () => onTap?.call(2),
                     ),
                     _NavIcon(
-                      icon: Icons.chat_bubble_outline_rounded,
+                      icon: Icons.edit_note_rounded,
                       label: _labels[3],
                       active: currentIndex == 3,
                       onTap: () => onTap?.call(3),

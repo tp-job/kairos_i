@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'core/motion/motion.dart';
-import 'features/shell/main_shell.dart';
-import 'features/splash/splash_screen.dart';
 
+import 'core/navigation/app_router.dart';
 import 'core/theme/theme_provider.dart';
 
 Future<void> main() async {
@@ -27,8 +25,11 @@ class KairosApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Rebuilds when the user changes mode or contrast.
     final theme = ref.watch(themeProvider);
+    // Read, not watched: the router owns every branch's navigation stack and
+    // must outlive a theme change.
+    final router = ref.read(routerProvider);
 
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'Kairos',
       debugShowCheckedModeBanner: false,
       // Both schemes are handed over at once so ThemeMode.system can follow
@@ -37,35 +38,9 @@ class KairosApp extends ConsumerWidget {
       theme: theme.lightTheme,
       darkTheme: theme.darkTheme,
       themeMode: theme.mode,
-      home: const _Bootstrap(),
-    );
-  }
-}
-
-/// Root gate: shows the [SplashScreen] first, then cross-fades to the app
-/// shell.
-class _Bootstrap extends StatefulWidget {
-  const _Bootstrap();
-
-  @override
-  State<_Bootstrap> createState() => _BootstrapState();
-}
-
-class _BootstrapState extends State<_Bootstrap> {
-  bool _ready = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedSwitcher(
-      duration: AppMotion.slow,
-      switchInCurve: AppMotion.emphasized,
-      switchOutCurve: AppMotion.standard,
-      child: _ready
-          ? const MainShell()
-          : SplashScreen(
-              key: const ValueKey('splash'),
-              onFinished: () => setState(() => _ready = true),
-            ),
+      // The route table — and the splash → shell handoff — now live in
+      // core/navigation/app_router.dart (FR-8.6).
+      routerConfig: router,
     );
   }
 }

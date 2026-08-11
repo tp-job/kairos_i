@@ -1,10 +1,11 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../core/navigation/routes.dart';
 import '../../core/theme/app_theme.dart';
 import 'providers/weather_provider.dart';
-import 'widgets/weather_detail_screen.dart';
 
 /// Glassmorphism weather page — the "New York" main interface from the
 /// `weather` reference: a slate gradient card, a big temperature, a 2×2
@@ -100,11 +101,10 @@ class _Body extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Opens the alternate editorial weather view.
+                    // The alternate editorial view: a peer presentation of the
+                    // same data, so it arrives on the X axis, not deeper.
                     GestureDetector(
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const WeatherDetailScreen()),
-                      ),
+                      onTap: () => context.push(Routes.weatherDetail),
                       behavior: HitTestBehavior.opaque,
                       child: Icon(Icons.settings, color: inkMuted, size: 16),
                     ),
@@ -116,7 +116,7 @@ class _Body extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     GestureDetector(
-                      onTap: () => Navigator.of(context).maybePop(),
+                      onTap: () => context.pop(),
                       behavior: HitTestBehavior.opaque,
                       child: Icon(Icons.home_outlined, color: ink, size: 16),
                     ),

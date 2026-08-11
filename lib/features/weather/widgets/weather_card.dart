@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/navigation/routes.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/bento_card.dart';
 import '../models/weather_model.dart';
 import '../providers/weather_provider.dart';
-import 'weather_detail_screen.dart';
 
 /// ConsumerWidget = StatelessWidget that can `ref.watch` a provider,
 /// the Riverpod equivalent of a component calling useQuery(). Rebuilds
@@ -24,9 +25,7 @@ class WeatherCard extends ConsumerWidget {
       // Tapping the Bento box opens the full editorial detail view.
       // (Refresh is handled inside the detail screen or via a future
       // pull-to-refresh gesture on the dashboard itself.)
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const WeatherDetailScreen()),
-      ),
+      onTap: () => context.push(Routes.weatherDetail),
       child: AsyncCardBody<WeatherModel>(
         value: weather,
         builder: (context, data) => _WeatherContent(data: data),

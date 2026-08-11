@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/motion/motion.dart';
+import '../../core/navigation/routes.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/design_tokens.dart';
 import '../../core/theme/theme_provider.dart';
 import '../market/providers/market_provider.dart';
 import '../news/models/news_model.dart';
 import '../news/providers/news_provider.dart';
-import '../notes/notes_screen.dart';
 import '../notes/providers/notes_provider.dart';
 import '../orchestrator/providers/orchestrator_provider.dart';
 import '../tasks/models/task_model.dart';
 import '../tasks/providers/tasks_provider.dart';
 import '../weather/providers/weather_provider.dart';
-import '../weather/weather_glass_screen.dart';
 import 'widgets/dashboard_header.dart';
 
 /// The dashboard: a brand hero header with an overlapping search bar, a row of
@@ -212,9 +212,9 @@ class _WeatherProjectCard extends ConsumerWidget {
     final scheme = context.colors;
 
     return PressableScale(
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const WeatherGlassScreen()),
-      ),
+      // Shared-axis Z: the card the finger just pressed opens *deeper*, not
+      // sideways. Transition lives with the route (core/navigation).
+      onTap: () => context.push(Routes.weather),
       child: Container(
         width: 210,
         padding: const EdgeInsets.all(DesignTokens.cardPadding),
@@ -351,9 +351,9 @@ class _NotesMiniCard extends ConsumerWidget {
       icon: Icons.edit_note_rounded,
       title: 'โน้ต',
       subtitle: subtitle,
-      onTap: () => Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const NotesScreen()),
-      ),
+      // Notes is a primary tab now, not a pushed page — switch branches so the
+      // nav bar stays honest about where the user is.
+      onTap: () => context.go(Routes.notes),
     );
   }
 }
