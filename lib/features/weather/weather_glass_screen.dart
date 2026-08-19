@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/navigation/routes.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/kairos_spinner.dart';
 import 'providers/weather_provider.dart';
 
 /// Glassmorphism weather page — the "New York" main interface from the
@@ -28,7 +29,7 @@ class WeatherGlassScreen extends ConsumerWidget {
         child: SafeArea(
           child: weather.when(
             loading: () => Center(
-              child: CircularProgressIndicator(color: palette.onHero),
+              child: KairosSpinner(size: 34, color: palette.onHero),
             ),
             error: (_, _) => const _Body(
               city: 'New York',

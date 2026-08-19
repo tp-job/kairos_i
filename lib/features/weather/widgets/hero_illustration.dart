@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:kairos_i/core/theme/app_theme.dart';
 import '../models/weather_condition.dart';
 import 'horizon_lines.dart';
 
@@ -16,7 +17,7 @@ class HeroIllustration extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = condition.palette;
+    final palette = context.skies.forSky(condition.sky);
 
     return LayoutBuilder(
       builder: (context, constraints) {

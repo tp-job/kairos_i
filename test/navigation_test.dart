@@ -15,6 +15,7 @@ import 'package:kairos_i/features/dashboard/widgets/bottom_nav_bar.dart';
 import 'package:kairos_i/features/notes/note_form_screen.dart';
 import 'package:kairos_i/features/notes/notes_screen.dart';
 
+import 'support/prefs_harness.dart';
 import 'support/router_harness.dart';
 
 /// Sends a system back press through the same path Android uses.
@@ -24,6 +25,8 @@ Future<void> pressSystemBack(WidgetTester tester) async {
 }
 
 void main() {
+  setUp(() => initPrefs());
+
   testWidgets('A1 — a branch keeps its own stack when left and re-entered',
       (tester) async {
     await pumpAppAt(tester, Routes.notes);

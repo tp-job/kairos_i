@@ -15,13 +15,33 @@ import 'package:kairos_i/core/navigation/routes.dart';
 import 'package:kairos_i/features/notes/note_form_screen.dart';
 import 'package:kairos_i/features/notes/providers/notes_provider.dart';
 
+import 'support/prefs_harness.dart';
 import 'support/router_harness.dart';
 
+/// Writes a note straight to the store, standing in for one saved on a
+/// previous launch. Notes no longer ship a seeded "welcome" entry — a new
+/// user gets the real empty state instead of content they did not write.
+Future<String> _givenSavedNote({String title = 'บันทึกเก่า'}) async {
+  final container = ProviderContainer(overrides: prefsOverrides);
+  addTearDown(container.dispose);
+  return container.read(notesProvider.notifier).add(title: title, body: '').id;
+}
+
 void main() {
-  testWidgets('NotesScreen shows the seeded note', (tester) async {
+  setUp(() => initPrefs());
+
+  testWidgets('NotesScreen starts empty on a first launch', (tester) async {
     await pumpAppAt(tester, Routes.notes);
 
-    expect(find.textContaining('ยินดีต้อนรับ'), findsOneWidget);
+    expect(find.textContaining('ยินดีต้อนรับ'), findsNothing);
+  });
+
+  testWidgets('a saved note survives a restart and renders', (tester) async {
+    await _givenSavedNote(title: 'โน้ตที่บันทึกไว้');
+
+    await pumpAppAt(tester, Routes.notes);
+
+    expect(find.text('โน้ตที่บันทึกไว้'), findsOneWidget);
   });
 
   testWidgets('creating a note via the form adds it to the list', (tester) async {
@@ -40,9 +60,11 @@ void main() {
   });
 
   testWidgets('editing an existing note updates it in place', (tester) async {
+    await _givenSavedNote(title: 'ก่อนแก้');
+
     await pumpAppAt(tester, Routes.notes);
 
-    await tester.tap(find.textContaining('ยินดีต้อนรับ'));
+    await tester.tap(find.text('ก่อนแก้'));
     await tester.pumpAndSettle();
     expect(find.byType(NoteFormScreen), findsOneWidget);
 
@@ -52,13 +74,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('แก้ไขแล้ว'), findsOneWidget);
-    expect(find.textContaining('ยินดีต้อนรับ'), findsNothing);
+    expect(find.text('ก่อนแก้'), findsNothing);
   });
 
   testWidgets('a note is reachable by address', (tester) async {
-    final container = ProviderContainer();
-    addTearDown(container.dispose);
-    final id = container.read(notesProvider).first.id;
+    final id = await _givenSavedNote();
 
     await pumpAppAt(tester, Routes.noteEdit(id));
 
@@ -67,10 +87,12 @@ void main() {
 
   testWidgets('a stale note id falls back to the list instead of throwing',
       (tester) async {
+    await _givenSavedNote();
+
     await pumpAppAt(tester, Routes.noteEdit('does-not-exist'));
 
     expect(find.byType(NoteFormScreen), findsNothing);
-    expect(find.textContaining('ยินดีต้อนรับ'), findsOneWidget);
+    expect(find.text('บันทึกเก่า'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../../core/motion/motion.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/design_tokens.dart';
+import '../../../core/widgets/kairos_spinner.dart';
 import '../providers/tasks_provider.dart';
 
 /// Opens the add-task sheet. This is the app's primary "create a task"
@@ -16,7 +17,11 @@ Future<void> openAddTask(BuildContext context, WidgetRef ref) {
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.transparent,
+    // No `backgroundColor` override here on purpose. `bottomSheetTheme`
+    // already paints the surface, the 24px top corners and the drag handle;
+    // forcing it transparent left the sheet with *no background at all*, so
+    // the calendar behind showed straight through the form and the title
+    // collided with the task list underneath it.
     builder: (_) => const _AddTaskSheet(),
   );
 }
@@ -93,7 +98,7 @@ class _AddTaskSheetState extends ConsumerState<_AddTaskSheet> {
     if (name.isEmpty) return;
     setState(() => _saving = true);
 
-    await ref.read(taskActionsProvider).createTask(
+    final result = await ref.read(taskActionsProvider).createTask(
           name: name,
           description: _description.text.trim(),
           dueDate: _due,
@@ -101,10 +106,22 @@ class _AddTaskSheetState extends ConsumerState<_AddTaskSheet> {
 
     if (!mounted) return;
     Navigator.of(context).pop();
+
+    // The task is saved either way — the difference is whether it also
+    // reached ClickUp. A failed mirror used to be swallowed entirely, so a
+    // user with ClickUp configured was told "saved" while their board
+    // quietly went out of sync.
+    final failed = result.sync == SyncOutcome.failed;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('เพิ่ม "$name" แล้ว'),
+        content: Text(
+          failed
+              ? 'บันทึก "$name" ในเครื่องแล้ว · ยังไม่ได้ซิงก์ไป ClickUp'
+              : 'เพิ่ม "$name" แล้ว',
+        ),
         behavior: SnackBarBehavior.floating,
+        // Long enough to actually read the sync caveat.
+        duration: Duration(seconds: failed ? 6 : 4),
       ),
     );
   }
@@ -121,57 +138,61 @@ class _AddTaskSheetState extends ConsumerState<_AddTaskSheet> {
             DesignTokens.screenPadding, 4, DesignTokens.screenPadding, 24),
         child: SafeArea(
           top: false,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('เพิ่มงานใหม่', style: text.titleLarge),
-              const SizedBox(height: DesignTokens.space5),
+          // With the keyboard up there is roughly half a screen left, which
+          // is less than this form is tall — without a scroll view the
+          // date chips and the save button overflow off the bottom.
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('เพิ่มงานใหม่', style: text.titleLarge),
+                const SizedBox(height: DesignTokens.space5),
 
-              _Field(
-                controller: _name,
-                hint: 'ชื่องาน',
-                autofocus: true,
-                textInputAction: TextInputAction.next,
-              ),
-              const SizedBox(height: 12),
-              _Field(
-                controller: _description,
-                hint: 'รายละเอียด (ไม่บังคับ)',
-                maxLines: 2,
-                onSubmitted: (_) => _canSave ? _save() : null,
-              ),
-              const SizedBox(height: 20),
-
-              Text(
-                'กำหนดส่ง',
-                style: text.labelLarge
-                    ?.copyWith(color: context.colors.onSurfaceVariant),
-              ),
-              const SizedBox(height: 10),
-              _DayChips(due: _due, onSelect: _setDay, onPickDate: _pickDate),
-              const SizedBox(height: 10),
-              _TimeRow(due: _due, onPickTime: _pickTime),
-              const SizedBox(height: 24),
-
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: FilledButton(
-                  onPressed: _canSave ? _save : null,
-                  child: _saving
-                      ? SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: context.colors.onPrimary,
-                          ),
-                        )
-                      : const Text('บันทึก'),
+                _Field(
+                  controller: _name,
+                  hint: 'ชื่องาน',
+                  autofocus: true,
+                  textInputAction: TextInputAction.next,
                 ),
-              ),
-            ],
+                const SizedBox(height: 12),
+                _Field(
+                  controller: _description,
+                  hint: 'รายละเอียด (ไม่บังคับ)',
+                  maxLines: 2,
+                  onSubmitted: (_) => _canSave ? _save() : null,
+                ),
+                const SizedBox(height: 20),
+
+                Text(
+                  'กำหนดส่ง',
+                  style: text.labelLarge
+                      ?.copyWith(color: context.colors.onSurfaceVariant),
+                ),
+                const SizedBox(height: 10),
+                _DayChips(due: _due, onSelect: _setDay, onPickDate: _pickDate),
+                const SizedBox(height: 10),
+                _TimeRow(due: _due, onPickTime: _pickTime),
+                const SizedBox(height: 24),
+
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: FilledButton(
+                    onPressed: _canSave ? _save : null,
+                    child: _saving
+                        // Flat onPrimary, not the gradient: on the filled
+                        // sage button the gradient's darker stops vanish.
+                        ? KairosSpinner(
+                            size: 20,
+                            strokeWidth: 2.5,
+                            color: context.colors.onPrimary,
+                          )
+                        : const Text('บันทึก'),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

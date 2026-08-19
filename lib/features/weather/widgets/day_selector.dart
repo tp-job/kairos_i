@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kairos_i/core/theme/weather_palettes.dart';
 import '../models/weather_condition.dart';
 
 /// One day in the bottom day-selector strip.

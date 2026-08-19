@@ -7,7 +7,7 @@ import '../../core/motion/motion.dart';
 import '../../core/navigation/routes.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/design_tokens.dart';
-import '../../core/theme/theme_provider.dart';
+import '../account/providers/profile_provider.dart';
 import '../market/providers/market_provider.dart';
 import '../news/models/news_model.dart';
 import '../news/providers/news_provider.dart';
@@ -71,9 +71,12 @@ class _TopSection extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.only(bottom: _overlap),
           child: DashboardHeader(
-            greeting: 'สวัสดี, Marimar 👋',
+            // Both the time of day and the name used to be hardcoded — every
+            // user was greeted as "Marimar", at any hour.
+            greeting: ref.watch(greetingProvider),
             headline: 'มาเริ่มจัดการ\nงานของคุณกัน',
-            onAvatar: () => openThemeSettings(context, ref),
+            initials: ref.watch(profileProvider).initials,
+            onAvatar: () => context.push(Routes.account),
           ),
         ),
         const Positioned(
@@ -626,67 +629,7 @@ void openQuickAdd(BuildContext context, WidgetRef ref) {
   ).whenComplete(controller.dispose);
 }
 
-/// Theme settings: light/dark/system plus the three exported contrast levels.
-///
-/// The previous sheet derived the whole palette from an Unsplash URL, which
-/// made the app's colors depend on a network fetch and silently ignored the
-/// OS light/dark setting. These two knobs map straight onto the six schemes in
-/// `material_scheme.dart`.
-void openThemeSettings(BuildContext context, WidgetRef ref) {
-  showModalBottomSheet<void>(
-    context: context,
-    builder: (sheetContext) => Consumer(
-      builder: (context, ref, _) {
-        final state = ref.watch(themeProvider);
-        final notifier = ref.read(themeProvider.notifier);
-
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 4, 24, 32),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('ธีมและการแสดงผล', style: context.text.titleLarge),
-                const SizedBox(height: DesignTokens.space5),
-                Text('โหมดสี',
-                    style: context.text.labelLarge
-                        ?.copyWith(color: context.colors.onSurfaceVariant)),
-                const SizedBox(height: DesignTokens.space2),
-                SegmentedButton<ThemeMode>(
-                  segments: [
-                    for (final mode in ThemeMode.values)
-                      ButtonSegment(value: mode, label: Text(mode.thaiLabel)),
-                  ],
-                  selected: {state.mode},
-                  showSelectedIcon: false,
-                  onSelectionChanged: (s) => notifier.setMode(s.first),
-                ),
-                const SizedBox(height: DesignTokens.space5),
-                Text('ความคมชัด',
-                    style: context.text.labelLarge
-                        ?.copyWith(color: context.colors.onSurfaceVariant)),
-                const SizedBox(height: DesignTokens.space2),
-                SegmentedButton<AppContrast>(
-                  segments: [
-                    for (final c in AppContrast.values)
-                      ButtonSegment(value: c, label: Text(c.thaiLabel)),
-                  ],
-                  selected: {state.contrast},
-                  showSelectedIcon: false,
-                  onSelectionChanged: (s) => notifier.setContrast(s.first),
-                ),
-                const SizedBox(height: DesignTokens.space4),
-                Text(
-                  'โหมด "ตามระบบ" จะสลับสว่าง/มืดตามการตั้งค่าของเครื่อง',
-                  style: context.text.bodySmall
-                      ?.copyWith(color: context.colors.onSurfaceVariant),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    ),
-  );
-}
+// Theme settings used to live here as a bottom sheet. They now sit in
+// `AccountScreen` (Routes.account): the sheet's height cap put the contrast
+// control under the floating nav bar, and its `SegmentedButton` could not fit
+// three Thai labels without overlapping them.

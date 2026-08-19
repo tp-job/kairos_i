@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/account/account_screen.dart';
 import '../../features/calendar/calendar_screen.dart';
 import '../../features/dashboard/dashboard_screen.dart';
 import '../../features/news/news_screen.dart';
@@ -143,6 +144,16 @@ GoRouter _buildRouter(Ref ref) {
       ),
 
       // --- Focused modes, above the shell ----------------------------------
+      GoRoute(
+        path: Routes.account,
+        parentNavigatorKey: rootKey,
+        // Drill-in from the avatar the user just pressed, matching the
+        // weather card's gesture.
+        pageBuilder: (context, state) => KairosPage<void>.sharedAxisZ(
+          key: state.pageKey,
+          child: const AccountScreen(),
+        ),
+      ),
       GoRoute(
         path: Routes.weather,
         parentNavigatorKey: rootKey,

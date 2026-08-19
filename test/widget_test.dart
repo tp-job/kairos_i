@@ -10,11 +10,15 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:kairos_i/main.dart';
 
+import 'support/prefs_harness.dart';
+
 void main() {
+  setUp(() => initPrefs());
+
   testWidgets('KairosApp boots and shows the Kairos word-mark',
       (WidgetTester tester) async {
     await tester.pumpWidget(
-      const ProviderScope(child: KairosApp()),
+      ProviderScope(overrides: prefsOverrides, child: const KairosApp()),
     );
 
     // Pump a single frame so the widget tree settles.

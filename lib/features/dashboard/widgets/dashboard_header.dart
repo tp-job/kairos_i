@@ -15,11 +15,17 @@ class DashboardHeader extends StatelessWidget {
     super.key,
     required this.greeting,
     required this.headline,
+    this.initials = '',
     this.onAvatar,
   });
 
   final String greeting;
   final String headline;
+
+  /// One or two letters from the user's name. Empty falls back to the person
+  /// glyph — better a neutral icon than inventing initials nobody set.
+  final String initials;
+
   final VoidCallback? onAvatar;
 
   @override
@@ -62,7 +68,7 @@ class DashboardHeader extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: DesignTokens.space4),
-              _Avatar(onTap: onAvatar),
+              _Avatar(onTap: onAvatar, initials: initials),
             ],
           ),
         ),
@@ -72,16 +78,17 @@ class DashboardHeader extends StatelessWidget {
 }
 
 class _Avatar extends StatelessWidget {
-  const _Avatar({this.onTap});
+  const _Avatar({this.onTap, this.initials = ''});
 
   final VoidCallback? onTap;
+  final String initials;
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
     return Semantics(
       button: true,
-      label: 'ตั้งค่าธีม',
+      label: 'บัญชีและการตั้งค่า',
       child: Material(
         color: palette.onHero.withValues(alpha: 0.14),
         shape: CircleBorder(
@@ -96,7 +103,15 @@ class _Avatar extends StatelessWidget {
           child: SizedBox(
             width: DesignTokens.minTouchTarget,
             height: DesignTokens.minTouchTarget,
-            child: Icon(Icons.person_rounded, color: palette.onHero, size: 24),
+            child: initials.isEmpty
+                ? Icon(Icons.person_rounded, color: palette.onHero, size: 24)
+                : Center(
+                    child: Text(
+                      initials,
+                      style: context.text.titleSmall
+                          ?.copyWith(color: palette.onHero),
+                    ),
+                  ),
           ),
         ),
       ),

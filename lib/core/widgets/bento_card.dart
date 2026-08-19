@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_theme.dart';
 import '../theme/design_tokens.dart';
 import 'glass_container.dart';
+import 'kairos_spinner.dart';
 
 /// A Bento box: the standard titled card every feature panel is built on
 /// (WeatherCard, TasksCard, ...). Feature widgets supply only `child` — the
@@ -94,11 +95,7 @@ class AsyncCardBody<T> extends StatelessWidget {
     return value.when(
       data: (data) => builder(context, data),
       loading: () => const Center(
-        child: SizedBox(
-          width: 20,
-          height: 20,
-          child: CircularProgressIndicator(strokeWidth: 2),
-        ),
+        child: KairosSpinner(size: 22, strokeWidth: 2.5),
       ),
       error: (error, _) => Center(
         child: Column(

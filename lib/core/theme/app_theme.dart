@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'design_tokens.dart';
 import 'kairos_palette.dart';
 import 'material_scheme.dart';
+import 'weather_palettes.dart';
 
 /// Turns a [ColorScheme] from `material_scheme.dart` into the app's
 /// [ThemeData]. Keep the mapping mechanical — a design decision belongs in the
@@ -72,7 +73,7 @@ class AppTheme {
       canvasColor: scheme.surface,
       textTheme: textTheme,
       primaryTextTheme: textTheme,
-      extensions: [palette],
+      extensions: [palette, WeatherPalettes.fromScheme(scheme)],
       // A soft ripple, not Material's sparkle: the sparkle's specular grain is
       // a *tech* gesture and it fights every other surface in this system.
       splashFactory: InkRipple.splashFactory,
@@ -393,5 +394,6 @@ extension ThemeContext on BuildContext {
   ColorScheme get colors => Theme.of(this).colorScheme;
   TextTheme get text => Theme.of(this).textTheme;
   KairosPalette get palette => KairosPalette.of(this);
+  WeatherPalettes get skies => WeatherPalettes.of(this);
   bool get isDarkTheme => Theme.of(this).brightness == Brightness.dark;
 }

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/navigation/app_router.dart';
+import 'core/storage/prefs.dart';
 import 'core/theme/theme_provider.dart';
 
 Future<void> main() async {
@@ -10,11 +12,20 @@ Future<void> main() async {
   // Loads .env into dotenv.env before any provider tries to read a key.
   await dotenv.load(fileName: '.env');
 
+  // Resolved before the first frame so the task, note and theme stores can
+  // read it synchronously in their constructors. Doing it here is what lets
+  // the app open already showing the user's saved theme rather than
+  // flashing the default and correcting itself a frame later.
+  final prefs = await SharedPreferences.getInstance();
+
   runApp(
     // ProviderScope is the Riverpod equivalent of wrapping your React
     // tree in <QueryClientProvider>/<Provider store={store}> — every
     // provider used below lives inside this one root.
-    const ProviderScope(child: KairosApp()),
+    ProviderScope(
+      overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      child: const KairosApp(),
+    ),
   );
 }
 

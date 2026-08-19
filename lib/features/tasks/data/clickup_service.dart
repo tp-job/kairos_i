@@ -11,6 +11,16 @@ class ClickUpService {
 
   static const _baseUrl = 'https://api.clickup.com/api/v2';
 
+  /// Whether ClickUp is set up at all.
+  ///
+  /// Lets a caller tell "the user never configured ClickUp" apart from "the
+  /// sync genuinely failed". Without it every fresh checkout looks like a
+  /// broken integration, so the only safe thing to do with a failure was to
+  /// hide it — which then hid the real ones too.
+  bool get isConfigured =>
+      Env.optional('CLICKUP_API_TOKEN').isNotEmpty &&
+      Env.optional('CLICKUP_LIST_ID').isNotEmpty;
+
   Options get _authOptions => Options(headers: {
         'Authorization': Env.clickUpApiToken,
         'Content-Type': 'application/json',

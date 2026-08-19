@@ -25,6 +25,33 @@ class Note {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  Map<String, dynamic> toStorageJson() => {
+        'id': id,
+        'title': title,
+        'body': body,
+        'colorIndex': colorIndex,
+        'pinned': pinned,
+        'createdAt': createdAt.toIso8601String(),
+        'updatedAt': updatedAt.toIso8601String(),
+      };
+
+  factory Note.fromStorageJson(Map<String, dynamic> json) {
+    final created = DateTime.parse(json['createdAt'] as String);
+    return Note(
+      id: json['id'] as String,
+      title: json['title'] as String? ?? '',
+      body: json['body'] as String? ?? '',
+      // Clamped, not trusted: a stored index from a build that shipped more
+      // tints would otherwise throw a RangeError on every note render.
+      colorIndex: ((json['colorIndex'] as int?) ?? 0) % kNoteTintCount,
+      pinned: json['pinned'] as bool? ?? false,
+      createdAt: created,
+      updatedAt: json['updatedAt'] == null
+          ? created
+          : DateTime.parse(json['updatedAt'] as String),
+    );
+  }
+
   Note copyWith({
     String? title,
     String? body,

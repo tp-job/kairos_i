@@ -6,8 +6,15 @@ import 'package:kairos_i/core/navigation/app_router.dart';
 import 'package:kairos_i/core/theme/app_theme.dart';
 import 'package:kairos_i/core/theme/material_scheme.dart';
 
+import 'prefs_harness.dart';
+
 /// Pumps the real app — real route table, real shell, real transitions —
 /// opened directly at [location].
+///
+/// The caller must have run `initPrefs()` (normally in `setUp`) — this only
+/// spreads the resulting override in. Keeping the init in the test rather
+/// than here is what lets a test write to the store *before* pumping, to
+/// stand in for data saved on a previous launch.
 ///
 /// Overriding `initialLocationProvider` rather than driving the splash means a
 /// navigation test asserts on navigation, not on a 2200ms brand hold. Phone
@@ -24,7 +31,10 @@ Future<void> pumpAppAt(
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [initialLocationProvider.overrideWithValue(location)],
+      overrides: [
+        initialLocationProvider.overrideWithValue(location),
+        ...prefsOverrides,
+      ],
       child: Consumer(
         builder: (context, ref, _) => MaterialApp.router(
           theme: AppTheme.buildTheme(MaterialSchemes.light),

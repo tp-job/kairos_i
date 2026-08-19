@@ -14,10 +14,14 @@ import 'package:kairos_i/core/theme/app_theme.dart';
 import 'package:kairos_i/core/theme/design_tokens.dart';
 import 'package:kairos_i/core/theme/kairos_palette.dart';
 import 'package:kairos_i/core/theme/material_scheme.dart';
+import 'package:kairos_i/core/theme/weather_palettes.dart';
+import 'package:kairos_i/features/account/account_screen.dart';
 import 'package:kairos_i/features/calendar/calendar_screen.dart';
 import 'package:kairos_i/features/dashboard/dashboard_screen.dart';
 import 'package:kairos_i/features/news/news_screen.dart';
 import 'package:kairos_i/features/notes/notes_screen.dart';
+
+import 'support/prefs_harness.dart';
 
 const _schemes = <String, ColorScheme>{
   'light': MaterialSchemes.light,
@@ -38,12 +42,15 @@ double _contrast(Color a, Color b) {
 }
 
 void main() {
+  setUp(() => initPrefs());
+
   group('every screen builds under every exported scheme', () {
     final screens = <String, Widget>{
       'dashboard': const DashboardScreen(),
       'calendar': const CalendarScreen(),
       'news': const NewsScreen(),
       'notes': const NotesScreen(),
+      'account': const AccountScreen(),
     };
 
     for (final scheme in _schemes.entries) {
@@ -57,6 +64,7 @@ void main() {
 
           await tester.pumpWidget(
             ProviderScope(
+              overrides: prefsOverrides,
               child: MaterialApp(
                 theme: AppTheme.buildTheme(scheme.value),
                 home: screen.value,
@@ -105,6 +113,81 @@ void main() {
         KairosPalette.fromScheme(MaterialSchemes.light).noteTints.length,
         KairosPalette.fromScheme(MaterialSchemes.dark).noteTints.length,
       );
+    });
+  });
+
+  // The weather screen is the one that regressed: it held its own Color table
+  // and painted a cream page underneath a dark app. These lock both halves of
+  // that fix — the pigments are reachable through the theme, and every text
+  // pair on the poster is actually legible.
+  group('WeatherPalettes', () {
+    for (final scheme in _schemes.entries) {
+      test('the extension is registered on the built theme @ ${scheme.key}',
+          () {
+        // A missing registration silently falls back to `fromScheme`, so
+        // asserting the pigments alone would pass even if AppTheme forgot it.
+        final theme = AppTheme.buildTheme(scheme.value);
+        expect(
+          theme.extension<WeatherPalettes>(),
+          isNotNull,
+          reason: 'WeatherPalettes missing from ThemeData in ${scheme.key}',
+        );
+      });
+
+      test('every sky follows the scheme brightness @ ${scheme.key}', () {
+        final skies = WeatherPalettes.fromScheme(scheme.value);
+        for (final sky in WeatherSky.values) {
+          // Night depicts a night sky in both brightnesses — it is content,
+          // not chrome, and is the documented exception.
+          if (sky == WeatherSky.night) continue;
+          expect(
+            ThemeData.estimateBrightnessForColor(skies.forSky(sky).background),
+            scheme.value.brightness,
+            reason: '$sky ignores ${scheme.key} brightness',
+          );
+        }
+      });
+
+      test('ink and mutedInk clear AA on their own sky @ ${scheme.key}', () {
+        final skies = WeatherPalettes.fromScheme(scheme.value);
+        for (final sky in WeatherSky.values) {
+          final p = skies.forSky(sky);
+          // Both carry small type (the city name is 11px), so this is the
+          // 4.5:1 body-text threshold, not the 3:1 large-text one.
+          expect(
+            _contrast(p.background, p.ink),
+            greaterThanOrEqualTo(4.5),
+            reason: '$sky ink fails AA in ${scheme.key}',
+          );
+          expect(
+            _contrast(p.background, p.mutedInk),
+            greaterThanOrEqualTo(4.5),
+            reason: '$sky mutedInk fails AA in ${scheme.key}',
+          );
+        }
+      });
+
+      test('the accent is legible as the selected day label @ ${scheme.key}',
+          () {
+        final skies = WeatherPalettes.fromScheme(scheme.value);
+        for (final sky in WeatherSky.values) {
+          final p = skies.forSky(sky);
+          expect(
+            _contrast(p.background, p.accent),
+            greaterThanOrEqualTo(4.5),
+            reason: '$sky accent fails AA in ${scheme.key}',
+          );
+        }
+      });
+    }
+
+    test('every sky is defined in both brightnesses', () {
+      for (final scheme in [MaterialSchemes.light, MaterialSchemes.dark]) {
+        final skies = WeatherPalettes.fromScheme(scheme);
+        for (final sky in WeatherSky.values) {
+          expect(skies.skies[sky], isNotNull, reason: '$sky missing');
+        }
+      }
     });
   });
 

@@ -1,4 +1,5 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' show IconData, Icons;
+import 'package:kairos_i/core/theme/weather_palettes.dart';
 
 /// Kairos-side representation of "what kind of weather is this?".
 ///
@@ -35,43 +36,31 @@ enum WeatherCondition {
         WeatherCondition.snow => 'SNOW',
       };
 
-  /// Whole-screen palette for this condition — matches the reference:
-  /// paper cream for day, ink black for night.
-  WeatherPalette get palette => switch (this) {
-        WeatherCondition.sunny => const WeatherPalette(
-            background: Color(0xFFF4EFE7),
-            ink: Color(0xFF1E1B18),
-            mutedInk: Color(0xFF7A6E60),
-            accent: Color(0xFFC43A2E),
-          ),
-        WeatherCondition.rainy => const WeatherPalette(
-            background: Color(0xFFEDE8DF),
-            ink: Color(0xFF2A2622),
-            mutedInk: Color(0xFF7A6E60),
-            accent: Color(0xFF3B342E),
-          ),
-        WeatherCondition.clearNight => const WeatherPalette(
-            background: Color(0xFF0F0F10),
-            ink: Color(0xFFEDE6D2),
-            mutedInk: Color(0xFF9A8E70),
-            accent: Color(0xFFD4B15A),
-          ),
-        // Cool: soft warm cream, slate ink, muted teal accent — reads
-        // "misty morning" more than "dead of winter".
-        WeatherCondition.cool => const WeatherPalette(
-            background: Color(0xFFEDE7DA),
-            ink: Color(0xFF2E3B47),
-            mutedInk: Color(0xFF7A8794),
-            accent: Color(0xFF4A6572),
-          ),
-        // Snow: near-white paper with a cool blue undertone; deep-navy
-        // ink so snowflake linework stays crisp on light background.
-        WeatherCondition.snow => const WeatherPalette(
-            background: Color(0xFFF1F3F5),
-            ink: Color(0xFF243447),
-            mutedInk: Color(0xFF7E8B99),
-            accent: Color(0xFF3E5B78),
-          ),
+  /// The glyph for this condition in the day strip.
+  ///
+  /// Derived from the condition rather than hand-assigned per day, which is
+  /// what let the old hardcoded strip pair a snowflake with a sunny label.
+  IconData get icon => switch (this) {
+        WeatherCondition.sunny => Icons.wb_sunny_rounded,
+        WeatherCondition.rainy => Icons.grain_rounded,
+        WeatherCondition.clearNight => Icons.nights_stay_rounded,
+        WeatherCondition.cool => Icons.cloud_rounded,
+        WeatherCondition.snow => Icons.ac_unit_rounded,
+      };
+
+  /// Which sky this condition paints.
+  ///
+  /// The colors themselves live in `core/theme/weather_palettes.dart` as a
+  /// [ThemeExtension] — this getter is the whole bridge between the API
+  /// vocabulary and the design system. Read the palette with
+  /// `context.skies.forSky(condition.sky)`; never hold a `Color` here.
+  WeatherSky get sky => switch (this) {
+        WeatherCondition.sunny => WeatherSky.day,
+        WeatherCondition.rainy => WeatherSky.overcast,
+        WeatherCondition.clearNight => WeatherSky.night,
+        // Fog/haze/mist/cloudy all read as "misty morning", not "winter".
+        WeatherCondition.cool => WeatherSky.cool,
+        WeatherCondition.snow => WeatherSky.snow,
       };
 
   /// Map the raw OpenWeatherMap `weather[0].main` string into our enum.
@@ -100,28 +89,4 @@ enum WeatherCondition {
     }
     return WeatherCondition.sunny;
   }
-}
-
-/// Bundle of colors that theme one weather condition. Kept as a plain
-/// class (not a Flutter ThemeData) because we only need it inside the
-/// weather detail screen — no need to swap MaterialApp's theme globally.
-class WeatherPalette {
-  const WeatherPalette({
-    required this.background,
-    required this.ink,
-    required this.mutedInk,
-    required this.accent,
-  });
-
-  /// Full-screen background wash (paper cream / ink black).
-  final Color background;
-
-  /// Primary text + horizon-line color, high-contrast against [background].
-  final Color ink;
-
-  /// De-emphasized text (day labels, "C" superscript).
-  final Color mutedInk;
-
-  /// Warm illustration accent — sun red, moon gold.
-  final Color accent;
 }

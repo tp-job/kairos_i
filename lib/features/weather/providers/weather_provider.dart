@@ -16,3 +16,13 @@ final weatherProvider = FutureProvider<WeatherModel>((ref) async {
   final service = ref.watch(weatherServiceProvider);
   return service.getCurrentWeather();
 });
+
+/// The real five-day forecast behind the day-selector strip.
+///
+/// Kept as its own provider rather than folded into [weatherProvider] so a
+/// forecast failure cannot blank out current conditions: the big temperature
+/// still renders when only the strip is unavailable.
+final forecastProvider = FutureProvider<List<DailyForecast>>((ref) async {
+  final service = ref.watch(weatherServiceProvider);
+  return service.getForecast();
+});

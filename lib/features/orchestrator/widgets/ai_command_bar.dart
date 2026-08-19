@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/theme/design_tokens.dart';
 import '../../../core/widgets/glass_container.dart';
+import '../../../core/widgets/kairos_spinner.dart';
 import '../models/orchestrator_models.dart';
 import '../providers/orchestrator_provider.dart';
 
@@ -62,11 +63,7 @@ class _AiCommandBarState extends ConsumerState<AiCommandBar> {
                 ),
               ),
               result.isLoading
-                  ? SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: const CircularProgressIndicator(strokeWidth: 2),
-                    )
+                  ? const KairosSpinner(size: 20, strokeWidth: 2.5)
                   : IconButton(
                       icon: const Icon(Icons.arrow_upward_rounded),
                       color: context.colors.primary,

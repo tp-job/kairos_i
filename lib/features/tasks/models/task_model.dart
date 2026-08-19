@@ -45,6 +45,40 @@ class TaskModel {
     );
   }
 
+  /// Round-trips a locally-created task through `shared_preferences`.
+  ///
+  /// Deliberately *not* [fromJson]: that one parses ClickUp's wire format,
+  /// where status is a nested object and `due_date` is an epoch string.
+  /// Sharing one shape between an external API and our own storage means a
+  /// change on their side silently corrupts the local store.
+  Map<String, dynamic> toStorageJson() => {
+        'id': id,
+        'name': name,
+        'status': status,
+        'description': description,
+        'dueDate': dueDate?.toIso8601String(),
+        'done': done,
+        'attendees': attendees,
+        'source': source.name,
+      };
+
+  factory TaskModel.fromStorageJson(Map<String, dynamic> json) {
+    final rawDue = json['dueDate'] as String?;
+    return TaskModel(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      status: json['status'] as String? ?? 'to do',
+      description: json['description'] as String? ?? '',
+      dueDate: rawDue == null ? null : DateTime.parse(rawDue),
+      done: json['done'] as bool? ?? false,
+      attendees: json['attendees'] as int? ?? 0,
+      source: TaskSource.values.firstWhere(
+        (s) => s.name == json['source'],
+        orElse: () => TaskSource.local,
+      ),
+    );
+  }
+
   TaskModel copyWith({
     String? name,
     String? status,

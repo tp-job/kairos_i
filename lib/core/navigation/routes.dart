@@ -34,4 +34,8 @@ class Routes {
 
   static const weather = '/weather';
   static const weatherDetail = '/weather/detail';
+
+  /// Account and app settings. Above the shell like the weather canvas —
+  /// it is a focused mode you come back from, not a fifth tab.
+  static const account = '/account';
 }

@@ -16,6 +16,23 @@ class Env {
     return value;
   }
 
+  /// Reads [key] without throwing, returning `''` when it is missing — or
+  /// when `.env` was never loaded at all, which is the normal state in a
+  /// widget test.
+  ///
+  /// [_require] is right for a call that cannot proceed without the key. It
+  /// is wrong for asking *whether* an optional integration is set up: there,
+  /// throwing turns "ClickUp isn't configured" into a crash, and the only
+  /// defense is a blanket `catch` that then also swallows the real errors.
+  static String optional(String key) {
+    try {
+      return dotenv.env[key] ?? '';
+    } catch (_) {
+      // dotenv throws rather than returning empty when load() never ran.
+      return '';
+    }
+  }
+
   static String get openRouterApiKey => _require('OPENROUTER_API_KEY');
   static String get openWeatherApiKey => _require('OPENWEATHER_API_KEY');
   static String get clickUpApiToken => _require('CLICKUP_API_TOKEN');
