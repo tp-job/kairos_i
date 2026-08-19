@@ -20,6 +20,7 @@ import 'package:kairos_i/features/calendar/calendar_screen.dart';
 import 'package:kairos_i/features/dashboard/dashboard_screen.dart';
 import 'package:kairos_i/features/news/news_screen.dart';
 import 'package:kairos_i/features/notes/notes_screen.dart';
+import 'package:kairos_i/features/orchestrator/chat_screen.dart';
 
 import 'support/prefs_harness.dart';
 
@@ -51,6 +52,7 @@ void main() {
       'news': const NewsScreen(),
       'notes': const NotesScreen(),
       'account': const AccountScreen(),
+      'chat': const ChatScreen(),
     };
 
     for (final scheme in _schemes.entries) {

@@ -19,7 +19,21 @@ class OpenRouterService {
   // one gets deprecated or rate-limited.
   static const _model = 'meta-llama/llama-3.1-8b-instruct:free';
 
-  Future<String> _complete(String systemPrompt, String userPrompt) async {
+  Future<String> _complete(String systemPrompt, String userPrompt) =>
+      _completeWithHistory(systemPrompt, [
+        {'role': 'user', 'content': userPrompt},
+      ]);
+
+  /// The general form: a system prompt plus however many prior turns.
+  ///
+  /// The single-message version above is the special case. Sending history is
+  /// the whole difference between a command box and a conversation — without
+  /// it "แล้วเลื่อนเป็นบ่ายสอง" is unanswerable because the model has never
+  /// seen what is being moved.
+  Future<String> _completeWithHistory(
+    String systemPrompt,
+    List<Map<String, String>> turns,
+  ) async {
     final response = await _dio.post(
       _baseUrl,
       options: Options(headers: {
@@ -30,7 +44,7 @@ class OpenRouterService {
         'model': _model,
         'messages': [
           {'role': 'system', 'content': systemPrompt},
-          {'role': 'user', 'content': userPrompt},
+          ...turns,
         ],
         'temperature': 0.3,
       },
@@ -75,6 +89,42 @@ role=tasks, action=create_task, task_name="ส่งงาน", due_date=พร�
 ''';
 
     final raw = await _complete(systemPrompt, userMessage);
+    return ParsedIntent.fromJson(_extractJson(raw));
+  }
+
+  /// The chat turn: the same JSON contract as [parseIntent], but with the
+  /// conversation so far in front of it.
+  ///
+  /// [turns] is oldest-first and already trimmed by the caller — a free-tier
+  /// context window is small, and an unbounded transcript starts failing
+  /// silently once it overflows.
+  Future<ParsedIntent> parseConversation(
+    List<Map<String, String>> turns,
+  ) async {
+    final now = DateTime.now();
+    final systemPrompt = '''
+คุณคือผู้ช่วยของแอป Kairos คุยกับผู้ใช้เป็นภาษาไทยแบบเป็นกันเอง
+ตอบกลับเป็น JSON object เท่านั้น ห้ามมีข้อความอื่นนอกเหนือจาก JSON
+
+วันเวลาปัจจุบันคือ ${now.toIso8601String()}
+
+รูปแบบ JSON:
+{
+  "role": "weather" | "tasks" | "techNews" | "market" | "general",
+  "action": "create_task" | "answer_question" | "none",
+  "task_name": string หรือ null,
+  "due_date": ISO8601 string หรือ null,
+  "reply_text": string (สิ่งที่จะพูดกับผู้ใช้ ต้องมีเสมอ)
+}
+
+กติกา:
+- "reply_text" ต้องมีค่าเสมอ เพราะเป็นสิ่งที่ผู้ใช้จะเห็น
+- ถ้าผู้ใช้สั่งสร้างงาน ให้ action=create_task และสรุปสั้นๆ ใน reply_text
+- ถ้าผู้ใช้ถามต่อจากข้อความก่อนหน้า ให้ใช้บริบทจากบทสนทนาด้านบน
+- ถ้าไม่แน่ใจเรื่องวันเวลา ให้ถามกลับ โดยใช้ action=none
+''';
+
+    final raw = await _completeWithHistory(systemPrompt, turns);
     return ParsedIntent.fromJson(_extractJson(raw));
   }
 

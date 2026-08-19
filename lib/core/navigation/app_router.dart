@@ -9,6 +9,7 @@ import '../../features/news/news_screen.dart';
 import '../../features/notes/note_form_screen.dart';
 import '../../features/notes/notes_screen.dart';
 import '../../features/notes/providers/notes_provider.dart';
+import '../../features/orchestrator/chat_screen.dart';
 import '../../features/shell/main_shell.dart';
 import '../../features/splash/splash_screen.dart';
 import '../../features/weather/weather_glass_screen.dart';
@@ -144,6 +145,15 @@ GoRouter _buildRouter(Ref ref) {
       ),
 
       // --- Focused modes, above the shell ----------------------------------
+      GoRoute(
+        path: Routes.chat,
+        parentNavigatorKey: rootKey,
+        // Drill-in from the AI pill the user just pressed.
+        pageBuilder: (context, state) => KairosPage<void>.sharedAxisZ(
+          key: state.pageKey,
+          child: const ChatScreen(),
+        ),
+      ),
       GoRoute(
         path: Routes.account,
         parentNavigatorKey: rootKey,

@@ -12,7 +12,7 @@ import '../market/providers/market_provider.dart';
 import '../news/models/news_model.dart';
 import '../news/providers/news_provider.dart';
 import '../notes/providers/notes_provider.dart';
-import '../orchestrator/providers/orchestrator_provider.dart';
+import '../orchestrator/providers/chat_provider.dart';
 import '../tasks/models/task_model.dart';
 import '../tasks/providers/tasks_provider.dart';
 import '../tasks/widgets/add_task_sheet.dart';
@@ -111,12 +111,19 @@ class _SearchBarState extends ConsumerState<_SearchBar> {
     super.dispose();
   }
 
+  /// Sends the message *and* opens the conversation.
+  ///
+  /// It used to fire into the orchestrator and stay put, so the reply landed
+  /// nowhere the user could see — you typed, the field cleared, and that was
+  /// the entire feedback. Handing off to [ChatScreen] means the fast path
+  /// from the dashboard is kept, but the answer has somewhere to arrive.
   void _submit() {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
     _controller.clear();
-    ref.read(orchestratorControllerProvider.notifier).submit(text);
     FocusScope.of(context).unfocus();
+    context.push(Routes.chat);
+    ref.read(chatProvider.notifier).send(text);
   }
 
   @override
@@ -127,7 +134,9 @@ class _SearchBarState extends ConsumerState<_SearchBar> {
       padding: const EdgeInsets.fromLTRB(16, 6, 6, 6),
       child: Row(
         children: [
-          Icon(Icons.search, color: scheme.onSurfaceVariant, size: 20),
+          // Not a magnifying glass: nothing here searches. It opens the
+          // assistant, and the icon should say so.
+          Icon(Icons.auto_awesome, color: scheme.onSurfaceVariant, size: 20),
           const SizedBox(width: DesignTokens.space3),
           Expanded(
             child: TextField(
@@ -142,7 +151,7 @@ class _SearchBarState extends ConsumerState<_SearchBar> {
                 enabledBorder: InputBorder.none,
                 focusedBorder: InputBorder.none,
                 contentPadding: EdgeInsets.zero,
-                hintText: 'ค้นหา หรือพิมพ์คำสั่ง',
+                hintText: 'ถามผู้ช่วย หรือสั่งเพิ่มงาน',
               ),
             ),
           ),
@@ -609,62 +618,12 @@ class _SectionHeader extends StatelessWidget {
 
 // --- Sheets ---------------------------------------------------------------
 
-/// Quick-capture sheet — routes free text through the AI orchestrator.
-/// Public so the shell's FAB can trigger it from any tab.
-void openQuickAdd(BuildContext context, WidgetRef ref) {
-  final controller = TextEditingController();
-  showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    builder: (sheetContext) {
-      void submit() {
-        final text = controller.text.trim();
-        if (text.isNotEmpty) {
-          ref.read(orchestratorControllerProvider.notifier).submit(text);
-        }
-        Navigator.of(sheetContext).pop();
-      }
-
-      return Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
-        ),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 4, 24, 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('เพิ่มอย่างรวดเร็ว',
-                  style: sheetContext.text.titleLarge),
-              const SizedBox(height: DesignTokens.space4),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: controller,
-                      autofocus: true,
-                      decoration: const InputDecoration(
-                        hintText: 'เช่น "พรุ่งนี้บ่ายโมงส่งงาน"',
-                      ),
-                      onSubmitted: (_) => submit(),
-                    ),
-                  ),
-                  const SizedBox(width: DesignTokens.space3),
-                  IconButton.filled(
-                    onPressed: submit,
-                    iconSize: 20,
-                    icon: const Icon(Icons.arrow_upward_rounded),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      );
-    },
-  ).whenComplete(controller.dispose);
-}
+// The quick-capture sheet used to live here: a second free-text AI input,
+// separate from the dashboard bar, which fired into the orchestrator and
+// closed without showing a reply. Nothing called it any more once the shell
+// FAB moved to the deterministic add-task form, and a second AI surface with
+// different behaviour was the confusing half of the old flow. One
+// conversation now owns every free-text request: Routes.chat.
 
 // Theme settings used to live here as a bottom sheet. They now sit in
 // `AccountScreen` (Routes.account): the sheet's height cap put the contrast

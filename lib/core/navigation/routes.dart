@@ -38,4 +38,9 @@ class Routes {
   /// Account and app settings. Above the shell like the weather canvas —
   /// it is a focused mode you come back from, not a fifth tab.
   static const account = '/account';
+
+  /// The assistant conversation. Also above the shell: it is a place you go
+  /// to and come back from, and a fifth nav item would shrink every other
+  /// tab's hit target to buy it one tap.
+  static const chat = '/chat';
 }

@@ -31,6 +31,8 @@ class PrefKeys {
   static const profileName = 'kairos.profile.name.v1';
   static const profileEmail = 'kairos.profile.email.v1';
 
+  static const chat = 'kairos.chat.v1';
+
   /// Set once the first launch has completed. Distinguishes "the user has no
   /// tasks" from "we have never run", which are the same empty list but need
   /// different UI.

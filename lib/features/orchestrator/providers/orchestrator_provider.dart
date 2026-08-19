@@ -3,7 +3,6 @@ import '../../../core/network/api_client.dart';
 import '../../tasks/providers/tasks_provider.dart';
 import '../../weather/providers/weather_provider.dart';
 import '../data/openrouter_service.dart';
-import '../models/orchestrator_models.dart';
 
 final aiServiceProvider = Provider<OpenRouterService>((ref) {
   return OpenRouterService(ref.watch(dioProvider));
@@ -32,32 +31,11 @@ final dailyAdviceProvider = FutureProvider<String>((ref) async {
   );
 });
 
-/// Backs the AI command bar: holds the last parsed intent + a busy
-/// flag so the input field can show a spinner while the round trip to
-/// OpenRouter (and, if applicable, ClickUp) is in flight.
-class OrchestratorController extends AsyncNotifier<ParsedIntent?> {
-  @override
-  Future<ParsedIntent?> build() async => null;
-
-  Future<void> submit(String message) async {
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() async {
-      final ai = ref.read(aiServiceProvider);
-      final intent = await ai.parseIntent(message);
-
-      if (intent.action == 'create_task' && intent.taskName != null) {
-        await ref.read(taskActionsProvider).createTask(
-              name: intent.taskName!,
-              dueDate: intent.dueDate,
-            );
-      }
-
-      return intent;
-    });
-  }
-}
-
-final orchestratorControllerProvider =
-    AsyncNotifierProvider<OrchestratorController, ParsedIntent?>(
-  OrchestratorController.new,
-);
+// `OrchestratorController` used to live here: it held the single most recent
+// ParsedIntent and nothing else. That shape is what made the assistant a
+// command box rather than a conversation — there was no transcript to show
+// the user and no history to send back to the model, so a follow-up like
+// "แล้วเลื่อนเป็นบ่ายสอง" could never resolve what "it" meant.
+//
+// `ChatNotifier` (providers/chat_provider.dart) replaces it and owns the
+// same job plus the history.
