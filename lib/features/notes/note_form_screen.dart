@@ -132,11 +132,19 @@ class _NoteFormScreenState extends ConsumerState<NoteFormScreen> {
                 ),
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(
+                    // Scrolling the note puts the keyboard away — on a phone
+                    // the body field is taller than the visible area, and
+                    // re-reading what you wrote is the commonest reason to
+                    // scroll while the keyboard is up.
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: EdgeInsets.fromLTRB(
                       DesignTokens.screenPadding,
                       8,
                       DesignTokens.screenPadding,
-                      32,
+                      // Clears the keyboard so the last lines of a long note
+                      // are reachable instead of sitting behind it.
+                      32 + MediaQuery.of(context).viewInsets.bottom,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

@@ -260,6 +260,8 @@ Future<void> _editProfile(
         child: SafeArea(
           top: false,
           child: SingleChildScrollView(
+            keyboardDismissBehavior:
+                ScrollViewKeyboardDismissBehavior.onDrag,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -277,6 +279,10 @@ Future<void> _editProfile(
                 TextField(
                   controller: emailController,
                   keyboardType: TextInputType.emailAddress,
+                  // Last field: the key commits the form rather than doing
+                  // nothing, which is what a bare "return" would do here.
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => Navigator.of(sheetContext).pop(true),
                   decoration: const InputDecoration(
                     hintText: 'อีเมล (ไม่บังคับ)',
                   ),

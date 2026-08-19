@@ -15,6 +15,7 @@ import '../notes/providers/notes_provider.dart';
 import '../orchestrator/providers/orchestrator_provider.dart';
 import '../tasks/models/task_model.dart';
 import '../tasks/providers/tasks_provider.dart';
+import '../tasks/widgets/add_task_sheet.dart';
 import '../weather/providers/weather_provider.dart';
 import 'widgets/dashboard_header.dart';
 
@@ -31,6 +32,10 @@ class DashboardScreen extends ConsumerWidget {
       // carries its own top padding. The bottom padding clears the shell's
       // floating nav bar.
       body: SingleChildScrollView(
+        // The dashboard carries a search field and the AI command bar, so a
+        // scroll while the keyboard is up should put it away rather than
+        // leaving it covering the cards being scrolled to.
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         padding: const EdgeInsets.only(bottom: DesignTokens.navBarClearance),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -450,7 +455,7 @@ class _TasksSection extends ConsumerWidget {
   }
 }
 
-class _TaskItem extends StatelessWidget {
+class _TaskItem extends ConsumerWidget {
   const _TaskItem({required this.task});
 
   final TaskModel task;
@@ -461,7 +466,7 @@ class _TaskItem extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final scheme = context.colors;
     final due = task.dueDate;
     final subtitle =
@@ -474,27 +479,57 @@ class _TaskItem extends StatelessWidget {
         decoration: AppTheme.softCard(context),
         child: Row(
           children: [
-            _Checkbox(done: _done),
-            const SizedBox(width: DesignTokens.space3),
+            // The checkbox was previously a plain Container — it *looked*
+            // like a control and did nothing, so a task could only be
+            // completed from the calendar.
+            Semantics(
+              button: true,
+              checked: _done,
+              label: task.name,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () =>
+                    ref.read(localTasksProvider.notifier).toggleDone(task.id),
+                // 24px of art inside a 48px target: the tick stays small
+                // without asking a thumb to hit a 24px square.
+                child: SizedBox(
+                  width: DesignTokens.minTouchTarget,
+                  height: DesignTokens.minTouchTarget,
+                  child: Center(child: _CheckboxArt(done: _done)),
+                ),
+              ),
+            ),
+            const SizedBox(width: DesignTokens.space2),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    task.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.text.titleSmall,
+              child: Semantics(
+                button: true,
+                label: 'แก้ไข ${task.name}',
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => openEditTask(context, ref, task),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        task.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.text.titleSmall?.copyWith(
+                          decoration:
+                              _done ? TextDecoration.lineThrough : null,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.text.bodySmall
+                            ?.copyWith(color: scheme.onSurfaceVariant),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: context.text.bodySmall
-                        ?.copyWith(color: scheme.onSurfaceVariant),
-                  ),
-                ],
+                ),
               ),
             ),
           ],
@@ -504,8 +539,10 @@ class _TaskItem extends StatelessWidget {
   }
 }
 
-class _Checkbox extends StatelessWidget {
-  const _Checkbox({required this.done});
+/// The tick itself. Presentation only — [_TaskItem] owns the gesture and the
+/// hit target so the two cannot drift apart.
+class _CheckboxArt extends StatelessWidget {
+  const _CheckboxArt({this.done = false});
 
   final bool done;
 

@@ -68,6 +68,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       onToggleDone: () => ref
                           .read(localTasksProvider.notifier)
                           .toggleDone(tasks[i].id),
+                      onEdit: () => openEditTask(context, ref, tasks[i]),
                     ),
                   ),
           ),
@@ -259,12 +260,17 @@ class _TimelineRow extends StatelessWidget {
     required this.featured,
     required this.isLast,
     required this.onToggleDone,
+    required this.onEdit,
   });
 
   final TaskModel task;
   final bool featured;
   final bool isLast;
   final VoidCallback onToggleDone;
+
+  /// Tapping the card body opens the editor. The done button keeps its own
+  /// tap target, so completing a task never opens a form by accident.
+  final VoidCallback onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -311,8 +317,16 @@ class _TimelineRow extends StatelessWidget {
             child: Padding(
               padding: EdgeInsets.only(bottom: isLast ? 0 : 28, top: 2),
               child: featured
-                  ? _FeaturedCard(task: task, onToggleDone: onToggleDone)
-                  : _PlainItem(task: task, onToggleDone: onToggleDone),
+                  ? _FeaturedCard(
+                      task: task,
+                      onToggleDone: onToggleDone,
+                      onEdit: onEdit,
+                    )
+                  : _PlainItem(
+                      task: task,
+                      onToggleDone: onToggleDone,
+                      onEdit: onEdit,
+                    ),
             ),
           ),
         ],
@@ -322,15 +336,25 @@ class _TimelineRow extends StatelessWidget {
 }
 
 class _FeaturedCard extends StatelessWidget {
-  const _FeaturedCard({required this.task, required this.onToggleDone});
+  const _FeaturedCard({
+    required this.task,
+    required this.onToggleDone,
+    required this.onEdit,
+  });
   final TaskModel task;
   final VoidCallback onToggleDone;
+  final VoidCallback onEdit;
 
   @override
   Widget build(BuildContext context) {
     final cs = context.colors;
     final palette = context.palette;
-    return Container(
+    return Semantics(
+      button: true,
+      label: 'แก้ไข ${task.name}',
+      child: GestureDetector(
+        onTap: onEdit,
+        child: Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: palette.heroGradient,
@@ -383,6 +407,8 @@ class _FeaturedCard extends StatelessWidget {
             ],
           ),
         ],
+      ),
+        ),
       ),
     );
   }
@@ -477,9 +503,14 @@ class _AvatarStack extends StatelessWidget {
 }
 
 class _PlainItem extends StatelessWidget {
-  const _PlainItem({required this.task, required this.onToggleDone});
+  const _PlainItem({
+    required this.task,
+    required this.onToggleDone,
+    required this.onEdit,
+  });
   final TaskModel task;
   final VoidCallback onToggleDone;
+  final VoidCallback onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -488,7 +519,15 @@ class _PlainItem extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          child: Column(
+          // opaque so the whole text block is tappable, including the gaps
+          // between the title and description.
+          child: Semantics(
+            button: true,
+            label: 'แก้ไข ${task.name}',
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onEdit,
+              child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
@@ -518,6 +557,8 @@ class _PlainItem extends StatelessWidget {
                         ?.copyWith(color: cs.onSurfaceVariant, height: 1.3)),
               ],
             ],
+              ),
+            ),
           ),
         ),
         const SizedBox(width: 8),
