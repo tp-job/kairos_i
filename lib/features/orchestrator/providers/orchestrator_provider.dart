@@ -8,14 +8,21 @@ final aiServiceProvider = Provider<OpenRouterService>((ref) {
   return OpenRouterService(ref.watch(dioProvider));
 });
 
-/// Feature 1.3 Cross-API Synthesis: watches two already-loaded
-/// providers (weather + tasks) and, once both resolve, asks the AI to
-/// produce one advisory sentence. Because this is itself a
-/// FutureProvider that `ref.watch`es other providers, it automatically
-/// re-runs whenever weather or tasks refresh — no manual wiring needed.
+/// Feature 1.3 Cross-API Synthesis: watches weather and the day's tasks and,
+/// once they resolve, asks the AI for one advisory sentence. Because this is
+/// itself a FutureProvider that `ref.watch`es other providers, it re-runs
+/// whenever either input refreshes — no manual wiring needed.
+///
+/// Reads the **local** task store, not `tasksProvider`.
+///
+/// `tasksProvider` is the ClickUp mirror, and its own doc comment says it
+/// "errors when .env has no credentials — which is the normal state for a
+/// fresh checkout, so nothing in the UI may depend on this succeeding." This
+/// provider depended on it, which meant the advice could only ever resolve on
+/// a machine with a ClickUp token. It was never displayed, so nobody noticed.
 final dailyAdviceProvider = FutureProvider<String>((ref) async {
   final weather = await ref.watch(weatherProvider.future);
-  final tasks = await ref.watch(tasksProvider.future);
+  final tasks = ref.watch(upcomingLocalTasksProvider);
   final ai = ref.watch(aiServiceProvider);
 
   final weatherSummary =

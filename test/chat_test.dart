@@ -12,6 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:kairos_i/core/theme/app_theme.dart';
 import 'package:kairos_i/core/theme/material_scheme.dart';
+import 'package:kairos_i/features/dashboard/dashboard_screen.dart';
 import 'package:kairos_i/features/orchestrator/chat_screen.dart';
 import 'package:kairos_i/features/orchestrator/models/chat_message.dart';
 import 'package:kairos_i/features/orchestrator/providers/chat_provider.dart';
@@ -179,6 +180,34 @@ void main() {
       container.read(chatProvider.notifier).undoTaskFromMessage('nope');
 
       expect(container.read(localTasksProvider).length, 1);
+    });
+  });
+
+  group('daily advice on the dashboard', () {
+    testWidgets('collapses quietly when the AI call fails', (tester) async {
+      tester.view.physicalSize = const Size(412, 915);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: prefsOverrides,
+          child: MaterialApp(
+            theme: AppTheme.buildTheme(MaterialSchemes.light),
+            home: const DashboardScreen(),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 600));
+
+      // No network here, so the advice errors. The dashboard has to work
+      // without an API key, so the card collapses rather than putting an
+      // error banner above the user's tasks.
+      expect(tester.takeException(), isNull);
+      expect(find.text('สรุปวันนี้'), findsNothing);
+      // The rest of the page is unaffected.
+      expect(find.text('ภาพรวม'), findsOneWidget);
+      expect(find.text('งานของฉัน'), findsOneWidget);
     });
   });
 

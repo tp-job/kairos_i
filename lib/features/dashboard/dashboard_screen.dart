@@ -7,12 +7,14 @@ import '../../core/motion/motion.dart';
 import '../../core/navigation/routes.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/theme/design_tokens.dart';
+import '../../core/widgets/kairos_spinner.dart';
 import '../account/providers/profile_provider.dart';
 import '../market/providers/market_provider.dart';
 import '../news/models/news_model.dart';
 import '../news/providers/news_provider.dart';
 import '../notes/providers/notes_provider.dart';
 import '../orchestrator/providers/chat_provider.dart';
+import '../orchestrator/providers/orchestrator_provider.dart';
 import '../tasks/models/task_model.dart';
 import '../tasks/providers/tasks_provider.dart';
 import '../tasks/widgets/add_task_sheet.dart';
@@ -41,6 +43,11 @@ class DashboardScreen extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const _TopSection(),
+            const SizedBox(height: DesignTokens.space5),
+            const FadeSlideIn(
+              delay: Duration(milliseconds: 40),
+              child: _AdviceCard(),
+            ),
             const SizedBox(height: DesignTokens.space6),
             const FadeSlideIn(
               delay: Duration(milliseconds: 80),
@@ -174,6 +181,130 @@ class _SearchBarState extends ConsumerState<_SearchBar> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// The assistant's one-line read on the day — weather crossed with what is
+/// actually due — sitting directly under the input that opens the assistant.
+///
+/// [dailyAdviceProvider] has existed since the first build and was wired to
+/// nothing, so the app's headline AI feature never appeared on screen. This
+/// is that feature, surfaced.
+///
+/// It fails quietly on purpose. The advice is a nicety layered on top of a
+/// dashboard that has to work without an API key, so a missing key, an
+/// offline phone or a rate-limited free tier collapses the card to nothing
+/// rather than putting an error banner above the user's tasks.
+class _AdviceCard extends ConsumerWidget {
+  const _AdviceCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final advice = ref.watch(dailyAdviceProvider);
+    final cs = context.colors;
+    final palette = context.palette;
+
+    return advice.when(
+      error: (_, _) => const SizedBox.shrink(),
+      loading: () => const _AdviceSkeleton(),
+      data: (text) {
+        final trimmed = text.trim();
+        if (trimmed.isEmpty) return const SizedBox.shrink();
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(
+              horizontal: DesignTokens.screenPadding),
+          child: Semantics(
+            button: true,
+            label: 'สรุปของผู้ช่วย: $trimmed',
+            child: PressableScale(
+              // Tapping continues the thought in the place that can answer
+              // follow-ups, rather than dead-ending on a sentence.
+              onTap: () => context.push(Routes.chat),
+              child: Container(
+                padding: const EdgeInsets.all(DesignTokens.space4),
+                decoration: BoxDecoration(
+                  color: cs.surfaceContainerLowest,
+                  borderRadius:
+                      BorderRadius.circular(DesignTokens.radius2xl),
+                  border: Border.all(color: cs.outlineVariant),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 32,
+                      height: 32,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        gradient: palette.heroGradient,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(Icons.auto_awesome,
+                          size: 16, color: palette.onHero),
+                    ),
+                    const SizedBox(width: DesignTokens.space3),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'สรุปวันนี้',
+                            style: context.text.labelMedium
+                                ?.copyWith(color: cs.onSurfaceVariant),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            trimmed,
+                            style: context.text.bodyMedium
+                                ?.copyWith(height: 1.5),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// A placeholder with the card's real shape, so the page does not jump when
+/// the advice lands. The AI round trip is the slowest thing on the dashboard.
+class _AdviceSkeleton extends StatelessWidget {
+  const _AdviceSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = context.colors;
+    return Padding(
+      padding:
+          const EdgeInsets.symmetric(horizontal: DesignTokens.screenPadding),
+      child: Container(
+        height: 76,
+        padding: const EdgeInsets.all(DesignTokens.space4),
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(DesignTokens.radius2xl),
+          border: Border.all(color: cs.outlineVariant),
+        ),
+        child: Row(
+          children: [
+            const KairosSpinner(size: 20, strokeWidth: 2.5),
+            const SizedBox(width: DesignTokens.space3),
+            Text(
+              'กำลังสรุปวันนี้ให้...',
+              style: context.text.bodySmall
+                  ?.copyWith(color: cs.onSurfaceVariant),
+            ),
+          ],
+        ),
       ),
     );
   }
